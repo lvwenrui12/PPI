@@ -66,6 +66,8 @@
             this.btnWrite = new System.Windows.Forms.Button();
             this.btnStop = new System.Windows.Forms.Button();
             this.btnPLCRun = new System.Windows.Forms.Button();
+            this.label8 = new System.Windows.Forms.Label();
+            this.txtPLC = new System.Windows.Forms.TextBox();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -316,7 +318,7 @@
             // label11
             // 
             this.label11.AutoSize = true;
-            this.label11.Location = new System.Drawing.Point(216, 166);
+            this.label11.Location = new System.Drawing.Point(251, 163);
             this.label11.Name = "label11";
             this.label11.Size = new System.Drawing.Size(17, 12);
             this.label11.TabIndex = 18;
@@ -324,7 +326,7 @@
             // 
             // txtBit
             // 
-            this.txtBit.Location = new System.Drawing.Point(267, 157);
+            this.txtBit.Location = new System.Drawing.Point(300, 157);
             this.txtBit.Name = "txtBit";
             this.txtBit.Size = new System.Drawing.Size(77, 21);
             this.txtBit.TabIndex = 19;
@@ -449,11 +451,30 @@
             this.btnPLCRun.UseVisualStyleBackColor = true;
             this.btnPLCRun.Click += new System.EventHandler(this.btnPLCRun_Click);
             // 
+            // label8
+            // 
+            this.label8.AutoSize = true;
+            this.label8.Location = new System.Drawing.Point(191, 126);
+            this.label8.Name = "label8";
+            this.label8.Size = new System.Drawing.Size(101, 12);
+            this.label8.TabIndex = 33;
+            this.label8.Text = "PLC地址 十六进制";
+            // 
+            // txtPLC
+            // 
+            this.txtPLC.Location = new System.Drawing.Point(300, 123);
+            this.txtPLC.Name = "txtPLC";
+            this.txtPLC.Size = new System.Drawing.Size(77, 21);
+            this.txtPLC.TabIndex = 34;
+            this.txtPLC.Text = "12";
+            // 
             // MyPPI
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(755, 447);
+            this.Controls.Add(this.txtPLC);
+            this.Controls.Add(this.label8);
             this.Controls.Add(this.btnPLCRun);
             this.Controls.Add(this.btnStop);
             this.Controls.Add(this.btnWrite);
@@ -531,6 +552,8 @@
         private System.Windows.Forms.Button btnWrite;
         private System.Windows.Forms.Button btnStop;
         private System.Windows.Forms.Button btnPLCRun;
+        private System.Windows.Forms.Label label8;
+        private System.Windows.Forms.TextBox txtPLC;
     }
 }
 

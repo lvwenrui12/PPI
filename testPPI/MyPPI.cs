@@ -116,7 +116,7 @@ namespace testPPI
 
         private void btnRead_Click(object sender, EventArgs e)
         {
-
+            PPIHelper.PAddress.DAddress = Convert.ToByte(txtPLC.Text);
 
             if (!PPIHelper.serialPort1.IsOpen)
             {
@@ -282,6 +282,8 @@ namespace testPPI
 
         private void btnWrite_Click(object sender, EventArgs e)
         {
+            PPIHelper.PAddress.DAddress = Convert.ToByte(txtPLC.Text);
+
             if (!PPIHelper.serialPort1.IsOpen)
             {
                 MessageBox.Show("请设置串口参数后打开", "警告");
@@ -337,7 +339,7 @@ namespace testPPI
                                 {
                                     flag = true;
 
-                                    txtSendCmd.Text = ByteToString(PPIHelper.Wbit);
+                                    txtSendCmd.Text = ByteToString(PPIHelper.PAddress.Wbit);
                                 }
 
 

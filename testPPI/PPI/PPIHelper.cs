@@ -14,7 +14,9 @@ namespace testPPI.PPI
 
 
 
-            public  static  PPIAddress PAddress=new PPIAddress();
+        public  static  PPIAddress PAddress=new PPIAddress();
+
+       
         public static byte[] receiveByte;
         
         public static System.IO.Ports.SerialPort serialPort1 = new SerialPort();
@@ -27,7 +29,7 @@ namespace testPPI.PPI
         //读取某个位的状态
         public static bool Readbit(int ByteAddress, int bitnumber, Enums.StorageType storageType, out byte[] bitValue)
         {
-            
+            PAddress.DAddress = 0x0c;
 
             bitValue = new byte[1];
 
@@ -887,6 +889,8 @@ namespace testPPI.PPI
             //{
             //    ByteAddress = ByteAddress * 8 + bitnumber;
             //}
+
+
 
             ByteAddress = ByteAddress * 8 + bitnumber;
             Wbit[22] = 0x01;//Byte 22 为读取数据的长度,01： 1 Bit 02： 1 Byte 04： 1 Word 06： Double Word

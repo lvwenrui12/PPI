@@ -26,11 +26,16 @@ namespace testPPI
 
 
 
-        public static TcpClient tcp = new TcpClient();
+     
 
         ZLB_PPIHelper ppiHelper = new ZLB_PPIHelper();
 
+      
+        // Create a TCP/IP socket.     
+     private   Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
+
+        private TcpClient tcpClient = new TcpClient();
 
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -126,7 +131,7 @@ namespace testPPI
 
         private void btnRead_Click(object sender, EventArgs e)
         {
-
+            PPIHelper.PAddress.DAddress = Convert.ToByte(txtPLC.Text);
 
 
             bool flag = false;
@@ -136,7 +141,7 @@ namespace testPPI
             if ((Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text) == Enums.StorageType.T)
             {
 
-                //if (ZLB_PPIHelper.TReadDword(Int32.Parse(txtAddress.Text),out readValues ))
+                //if (ZLB_PPIHelper.TReadDword(Int32.Parse(txtAddress.Text), out readValues))
                 //{
                 //    flag = true;
                 //}
@@ -149,15 +154,15 @@ namespace testPPI
                 switch (comRead.Text)
                 {
                     case "Bit":
-                        if (ZLB_PPIHelper.Readbit(int.Parse(txtComNum.Text), Int32.Parse(txtAddress.Text), Int32.Parse(txtBit.Text),
+                        if (ZLB_PPIHelper.Readbit(client, int.Parse(txtComNum.Text), Int32.Parse(txtAddress.Text), Int32.Parse(txtBit.Text),
 
                             (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                            out readValues))
+                            out readValues,int.Parse(txtPLC.Text)))
                         {
                             flag = true;
 
                         }
-                        txtSendCmd.Text = ByteToString(ZLB_PPIHelper.Rbyte);
+                        txtSendCmd.Text = ZLB_PPIHelper.sendCmd;
 
                         break;
                     //case "Byte":
@@ -249,7 +254,7 @@ namespace testPPI
 
 
 
-                txtReceive.Text = ByteToString(ZLB_PPIHelper.receiveByte);
+                txtReceive.Text = ZLB_PPIHelper.receiveByte;
 
                 txtValue.Text = ByteToString(readValues);
             }
@@ -284,7 +289,7 @@ namespace testPPI
 
         private void btnWrite_Click(object sender, EventArgs e)
         {
-           
+          
 
             int wValue = 0;
             bool flag = false;
@@ -301,7 +306,7 @@ namespace testPPI
 
                 //}
 
-                if (ZLB_PPIHelper.tcpClient.Connected)
+                if (tcpClient.Connected)
                 {
                     if (int.TryParse(txtWriteValue.Text, out wValue))
                     {
@@ -330,14 +335,14 @@ namespace testPPI
                             {
                                 case "Bit":
 
-                                    if (ZLB_PPIHelper.WriteBit(int.Parse(txtComNum.Text), Int32.Parse(txtAddress.Text), Convert.ToByte(txtBit.Text),
+                                    if (ZLB_PPIHelper.WriteBit(tcpClient,int.Parse(txtComNum.Text), Int32.Parse(txtAddress.Text), Convert.ToByte(txtBit.Text),
 
                                         (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                                        wValue))
+                                        wValue,int.Parse(txtPLC.Text)))
                                     {
                                         flag = true;
 
-                                        txtSendCmd.Text = ByteToString(ZLB_PPIHelper.Wbit);
+                                        txtSendCmd.Text = (ZLB_PPIHelper.sendCmd);
                                     }
 
 
@@ -400,7 +405,7 @@ namespace testPPI
 
                         if (flag)
                         {
-                            txtReceive.Text = ByteToString(ZLB_PPIHelper.receiveByte);
+                            txtReceive.Text = (ZLB_PPIHelper.receiveByte);
 
                         }
                         else
@@ -517,9 +522,17 @@ namespace testPPI
         {
             try
             {
-                    ZLB_PPIHelper.tcpClient.Connect(txtIP.Text, int.Parse(txtPort.Text));
+
+                IPAddress ipAddress = IPAddress.Parse(txtIP.Text);
+                IPEndPoint remoteEP = new IPEndPoint(ipAddress, int.Parse(txtPort.Text));
+
+                client.Connect(remoteEP);
+
+              //  tcpClient.Connect(txtIP.Text, int.Parse(txtPort.Text));
 
                     //ZLB_PPIHelper.tcpClient.Connect(IPAddress.Parse(txtIP.Text), int.Parse(txtPort.Text));
+
+
            
 
             }
@@ -570,6 +583,12 @@ namespace testPPI
              )
             );
 
+        }
+
+        private void btnClose_Click(object sender, EventArgs e)
+        {
+           
+            tcpClient.Close();
         }
     }
 }

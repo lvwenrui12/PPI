@@ -75,6 +75,9 @@
             this.txtComNum = new System.Windows.Forms.TextBox();
             this.label18 = new System.Windows.Forms.Label();
             this.serialPort1 = new System.IO.Ports.SerialPort(this.components);
+            this.txtPLC = new System.Windows.Forms.TextBox();
+            this.label19 = new System.Windows.Forms.Label();
+            this.btnClose = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -333,7 +336,7 @@
             // 
             // txtBit
             // 
-            this.txtBit.Location = new System.Drawing.Point(267, 157);
+            this.txtBit.Location = new System.Drawing.Point(318, 160);
             this.txtBit.Name = "txtBit";
             this.txtBit.Size = new System.Drawing.Size(77, 21);
             this.txtBit.TabIndex = 19;
@@ -460,7 +463,7 @@
             // 
             // button2
             // 
-            this.button2.Location = new System.Drawing.Point(698, 124);
+            this.button2.Location = new System.Drawing.Point(568, 134);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(89, 23);
             this.button2.TabIndex = 33;
@@ -474,7 +477,7 @@
             this.txtIP.Name = "txtIP";
             this.txtIP.Size = new System.Drawing.Size(122, 21);
             this.txtIP.TabIndex = 35;
-            this.txtIP.Text = "10.32.0.165";
+            this.txtIP.Text = "10.73.176.15";
             // 
             // label8
             // 
@@ -508,7 +511,7 @@
             this.txtComNum.Name = "txtComNum";
             this.txtComNum.Size = new System.Drawing.Size(122, 21);
             this.txtComNum.TabIndex = 39;
-            this.txtComNum.Text = "3";
+            this.txtComNum.Text = "5";
             // 
             // label18
             // 
@@ -523,11 +526,41 @@
             // 
             this.serialPort1.DataReceived += new System.IO.Ports.SerialDataReceivedEventHandler(this.serialPort1_DataReceived);
             // 
+            // txtPLC
+            // 
+            this.txtPLC.Location = new System.Drawing.Point(318, 131);
+            this.txtPLC.Name = "txtPLC";
+            this.txtPLC.Size = new System.Drawing.Size(77, 21);
+            this.txtPLC.TabIndex = 41;
+            this.txtPLC.Text = "12";
+            // 
+            // label19
+            // 
+            this.label19.AutoSize = true;
+            this.label19.Location = new System.Drawing.Point(209, 134);
+            this.label19.Name = "label19";
+            this.label19.Size = new System.Drawing.Size(101, 12);
+            this.label19.TabIndex = 40;
+            this.label19.Text = "PLC地址 十六进制";
+            // 
+            // btnClose
+            // 
+            this.btnClose.Location = new System.Drawing.Point(678, 134);
+            this.btnClose.Name = "btnClose";
+            this.btnClose.Size = new System.Drawing.Size(89, 23);
+            this.btnClose.TabIndex = 42;
+            this.btnClose.Text = "关闭连接";
+            this.btnClose.UseVisualStyleBackColor = true;
+            this.btnClose.Click += new System.EventHandler(this.btnClose_Click);
+            // 
             // ZLB
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(818, 487);
+            this.Controls.Add(this.btnClose);
+            this.Controls.Add(this.txtPLC);
+            this.Controls.Add(this.label19);
             this.Controls.Add(this.txtComNum);
             this.Controls.Add(this.label18);
             this.Controls.Add(this.txtPort);
@@ -620,6 +653,9 @@
         private System.Windows.Forms.TextBox txtComNum;
         private System.Windows.Forms.Label label18;
         private System.IO.Ports.SerialPort serialPort1;
+        private System.Windows.Forms.TextBox txtPLC;
+        private System.Windows.Forms.Label label19;
+        private System.Windows.Forms.Button btnClose;
     }
 }
 
