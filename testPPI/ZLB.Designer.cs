@@ -477,7 +477,7 @@
             this.txtIP.Name = "txtIP";
             this.txtIP.Size = new System.Drawing.Size(122, 21);
             this.txtIP.TabIndex = 35;
-            this.txtIP.Text = "10.73.176.15";
+            this.txtIP.Text = "10.32.0.165";
             // 
             // label8
             // 
@@ -532,7 +532,7 @@
             this.txtPLC.Name = "txtPLC";
             this.txtPLC.Size = new System.Drawing.Size(77, 21);
             this.txtPLC.TabIndex = 41;
-            this.txtPLC.Text = "12";
+            this.txtPLC.Text = "2";
             // 
             // label19
             // 

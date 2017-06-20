@@ -448,7 +448,7 @@ namespace testPPI.PPI
                 readValue = new byte[] { 0 };
                 return false;
             }
-        }//测试没有读到数据，还没有成功
+        }
 
 
 
@@ -539,6 +539,7 @@ namespace testPPI.PPI
             WordValue = new byte[] { 0 };
             return false;
         }
+
 
 
         public static bool ReadWords(int Address, Enums.StorageType storageType, out byte[] WordValue, int WordCount = 1)

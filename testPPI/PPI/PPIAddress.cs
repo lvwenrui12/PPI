@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using testPPI.Common;
 
 namespace testPPI.PPI
 {
@@ -50,13 +51,28 @@ namespace testPPI.PPI
                 Wbit[4] = _DAddress;
                 Wword[4] = _DAddress;
                 Affirm[1] = _DAddress;
+
+                WriteReceivesCheck[5] = _DAddress;
+
                 int i;
                 byte fcs;
+                for (i = 4, fcs = 0; i < WriteReceivesCheck.Length-2; i++)
+                {
+                    fcs += WriteReceivesCheck[i];
+                }
+                string str = ByteHelper.ByteToString(WriteReceivesCheck);
+
+                int tt = Convert.ToInt32(fcs) % 256; //添加的代码 mod 256
+
+                WriteReceivesCheck[WriteReceivesCheck.Length-2] = Convert.ToByte(tt);
+
+               
+              
                 for (i = 1, fcs = 0; i < 4; i++)
                 {
                     fcs += Affirm[i];
                 }
-                int tt = Convert.ToInt32(fcs)%256; //添加的代码 mod 256
+                tt = Convert.ToInt32(fcs)%256; //添加的代码 mod 256
                 Affirm[4] = Convert.ToByte(tt);
             }
         }//PLC地址，DA，默认情况下，PLC的地址为02H
@@ -158,6 +174,8 @@ namespace testPPI.PPI
 
 
        public byte[] WriteReceivesCheck = { 0x68, 0x12, 0x12, 0x68, 0x00, 0x02, 0x08, 0x32, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x01, 0x00, 0x00, 0x05, 0x01, 0xFF, 0x47, 0x16 };
+
+      
 
         public  byte[] TWritebyte = { 0x68, 0x24, 0x24, 0x68, 0x02, 0x00, 0x6c, 0x32, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0e, 0x00, 0x09, 0x05, 0x01, 0x12, 0x0a, 0x10, 0x1f, 0x00, 0x01, 0x00, 0x00, 0x1f, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x28, 0x00, 0x00, 0x00, 0x01, 0x01, 0x57, 0x16 };
 

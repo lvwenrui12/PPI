@@ -11,6 +11,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using testPPI.Common;
 using testPPI.PPI;
 
 namespace testPPI
@@ -26,13 +27,13 @@ namespace testPPI
 
 
 
-     
+
 
         ZLB_PPIHelper ppiHelper = new ZLB_PPIHelper();
 
-      
+
         // Create a TCP/IP socket.     
-     private   Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        private Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
 
         private TcpClient tcpClient = new TcpClient();
@@ -70,6 +71,10 @@ namespace testPPI
             comWrite.SelectedIndex = 0;
 
             comRead.SelectedIndex = 0;
+
+            client.ReceiveTimeout = 1000;
+
+
         }
 
 
@@ -81,20 +86,20 @@ namespace testPPI
             {
                 if (serialPort1.IsOpen)
                 {
-                  serialPort1.Close();
+                    serialPort1.Close();
                 }
                 else
                 {
                     // 设置端口参数
-                   serialPort1.BaudRate = int.Parse(this.comboBox2.Text);
-                   serialPort1.DataBits = int.Parse(this.comboBox3.Text);
-                   serialPort1.StopBits = (StopBits)Enum.Parse(typeof(StopBits), this.comboBox4.Text);
-                  serialPort1.Parity = (Parity)Enum.Parse(typeof(Parity), this.comboBox5.Text);
-                  serialPort1.PortName = this.comportName.Text;
+                    serialPort1.BaudRate = int.Parse(this.comboBox2.Text);
+                    serialPort1.DataBits = int.Parse(this.comboBox3.Text);
+                    serialPort1.StopBits = (StopBits)Enum.Parse(typeof(StopBits), this.comboBox4.Text);
+                    serialPort1.Parity = (Parity)Enum.Parse(typeof(Parity), this.comboBox5.Text);
+                    serialPort1.PortName = this.comportName.Text;
                     //comport.Encoding = Encoding.ASCII;
 
                     //打开端口
-                  serialPort1.Open();
+                    serialPort1.Open();
                 }
                 this.groupBox1.Enabled = !serialPort1.IsOpen;
                 //txtsend.Enabled = btnsend.Enabled = comport.IsOpen;
@@ -138,159 +143,132 @@ namespace testPPI
 
             byte[] readValues = new byte[] { };
 
-            if ((Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text) == Enums.StorageType.T)
-            {
 
-                //if (ZLB_PPIHelper.TReadDword(Int32.Parse(txtAddress.Text), out readValues))
-                //{
-                //    flag = true;
-                //}
-                //txtSendCmd.Text = ByteToString(ZLB_PPIHelper.TReadByte);
-
-            }
-            else
+            if (client.Connected)
             {
-                #region switch
-                switch (comRead.Text)
+                if ((Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text) == Enums.StorageType.T)
                 {
-                    case "Bit":
-                        if (ZLB_PPIHelper.Readbit(client, int.Parse(txtComNum.Text), Int32.Parse(txtAddress.Text), Int32.Parse(txtBit.Text),
 
-                            (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                            out readValues,int.Parse(txtPLC.Text)))
-                        {
-                            flag = true;
-
-                        }
-                        txtSendCmd.Text = ZLB_PPIHelper.sendCmd;
-
-                        break;
-                    //case "Byte":
-                    //    if (txtReadCount.Text.Length == 0)
-                    //    {
-                    //        if (
-                    //         ZLB_PPIHelper.Readbytes(Int32.Parse(txtAddress.Text),
-
-                    //        (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                    //        out readValues))
-                    //        {
-                    //            flag = true;
-
-                    //        }
-                    //        ;
-                    //    }
-                    //    else
-                    //    {
-                    //        if (ZLB_PPIHelper.Readbytes(Int32.Parse(txtAddress.Text),
-
-                    //       (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                    //     out readValues, Int32.Parse(txtReadCount.Text)))
-                    //        {
-                    //            flag = true;
-
-                    //        }
-                    //        ;
-                    //    }
-                    //    txtSendCmd.Text = ByteToString(ZLB_PPIHelper.Rbyte);
-                    //    break;
-
-
-                    //case "Word":
-                    //    if (txtReadCount.Text.Length == 0)
-                    //    {
-                    //        if (ZLB_PPIHelper.ReadWords(Int32.Parse(txtAddress.Text),
-
-                    //       (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                    //      out readValues))
-                    //        {
-                    //            flag = true;
-                    //        }
-                    //        ;
-                    //    }
-                    //    else
-                    //    {
-                    //        if (ZLB_PPIHelper.ReadWords(Int32.Parse(txtAddress.Text),
-
-                    //      (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                    //      out readValues, Int32.Parse(txtReadCount.Text)))
-                    //        {
-                    //            flag = true;
-                    //        }
-
-                    //    }
-
-                    //    txtSendCmd.Text = ByteToString(ZLB_PPIHelper.Rbyte);
-                    //    break;
-
-                    //case "DWord":
-
-                    //    if (ZLB_PPIHelper.ReadDWord(Int32.Parse(txtAddress.Text),
-
-                    //   (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                    //   out readValues))
-                    //    {
-                    //        flag = true;
-                    //    }
-                    //    txtSendCmd.Text = ByteToString(ZLB_PPIHelper.Rbyte);
-
-
-
-                    //    break;
-
-                    default:
-
-                        break;
-
+                    //if (ZLB_PPIHelper.TReadDword(Int32.Parse(txtAddress.Text), out readValues))
+                    //{
+                    //    flag = true;
+                    //}
+                    //txtSendCmd.Text = ByteToString(ZLB_PPIHelper.TReadByte);
 
                 }
-                #endregion
+                else
+                {
+                    #region switch
+                    switch (comRead.Text)
+                    {
+                        case "Bit":
+                            if (ZLB_PPIHelper.Readbit(client, int.Parse(txtComNum.Text), Int32.Parse(txtAddress.Text), Int32.Parse(txtBit.Text),
+
+                                (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
+                                out readValues, int.Parse(txtPLC.Text)))
+                            {
+                                flag = true;
+
+                            }
+                            txtSendCmd.Text = ZLB_PPIHelper.sendCmd;
+
+                            break;
+                        case "Byte":
+                            if (txtReadCount.Text.Length == 0)
+                            {
+                                if (
+                                 ZLB_PPIHelper.Readbytes(client, Int32.Parse(txtAddress.Text),
+
+                                (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
+                                out readValues, int.Parse(txtComNum.Text)))
+                                {
+                                    flag = true;
+                                }
+                            }
+                            else
+                            {
+                                if (ZLB_PPIHelper.Readbytes(client,Int32.Parse(txtAddress.Text),
+
+                               (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
+                             out readValues,int.Parse(txtComNum.Text), Int32.Parse(txtReadCount.Text)))
+                                {
+                                    flag = true;
+                                }
+                               
+                            }
+                            txtSendCmd.Text = (ZLB_PPIHelper.sendCmd);
+                            break;
+
+
+                        //case "Word":
+                        //    if (txtReadCount.Text.Length == 0)
+                        //    {
+                        //        if (ZLB_PPIHelper.ReadWords(Int32.Parse(txtAddress.Text),
+
+                        //       (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
+                        //      out readValues))
+                        //        {
+                        //            flag = true;
+                        //        }
+                        //        ;
+                        //    }
+                        //    else
+                        //    {
+                        //        if (ZLB_PPIHelper.ReadWords(Int32.Parse(txtAddress.Text),
+
+                        //      (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
+                        //      out readValues, Int32.Parse(txtReadCount.Text)))
+                        //        {
+                        //            flag = true;
+                        //        }
+
+                        //    }
+
+                        //    txtSendCmd.Text = ByteToString(ZLB_PPIHelper.Rbyte);
+                        //    break;
+
+                        //case "DWord":
+
+                        //    if (ZLB_PPIHelper.ReadDWord(Int32.Parse(txtAddress.Text),
+
+                        //   (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
+                        //   out readValues))
+                        //    {
+                        //        flag = true;
+                        //    }
+                        //    txtSendCmd.Text = ByteToString(ZLB_PPIHelper.Rbyte);
+
+
+
+                        //    break;
+
+                        default:
+
+                            break;
+
+
+                    }
+                    #endregion
+                }
             }
-
-
-
-
             if (flag)
             {
-
-
-
                 txtReceive.Text = ZLB_PPIHelper.receiveByte;
-
-                txtValue.Text = ByteToString(readValues);
+                txtValue.Text =ByteHelper.ByteToString(readValues);
             }
             else
             {
-
-
                 txtReceive.Text = "读取失败";
 
-
             }
 
         }
 
-        public static string ByteToString(byte[] bytes)
-
-        {
-
-            StringBuilder strBuilder = new StringBuilder();
-
-            foreach (byte bt in bytes)
-
-            {
-
-                strBuilder.AppendFormat("{0:X2} ", bt);
-
-            }
-
-            return strBuilder.ToString();
-
-        }
+     
 
         private void btnWrite_Click(object sender, EventArgs e)
         {
-          
-
+            
             int wValue = 0;
             bool flag = false;
             if (txtWriteValue.Text.Length == 0)
@@ -306,7 +284,7 @@ namespace testPPI
 
                 //}
 
-                if (tcpClient.Connected)
+                if (client.Connected)
                 {
                     if (int.TryParse(txtWriteValue.Text, out wValue))
                     {
@@ -335,10 +313,10 @@ namespace testPPI
                             {
                                 case "Bit":
 
-                                    if (ZLB_PPIHelper.WriteBit(tcpClient,int.Parse(txtComNum.Text), Int32.Parse(txtAddress.Text), Convert.ToByte(txtBit.Text),
+                                    if (ZLB_PPIHelper.WriteBit(client, int.Parse(txtComNum.Text), Int32.Parse(txtAddress.Text), Convert.ToByte(txtBit.Text),
 
                                         (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                                        wValue,int.Parse(txtPLC.Text)))
+                                        wValue, int.Parse(txtPLC.Text)))
                                     {
                                         flag = true;
 
@@ -418,6 +396,10 @@ namespace testPPI
                     {
                         MessageBox.Show("请输入正确数值");
                     }
+                }
+                else
+                {
+                    MessageBox.Show("连接失败");
                 }
 
             }
@@ -528,12 +510,12 @@ namespace testPPI
 
                 client.Connect(remoteEP);
 
-              //  tcpClient.Connect(txtIP.Text, int.Parse(txtPort.Text));
+                //  tcpClient.Connect(txtIP.Text, int.Parse(txtPort.Text));
 
-                    //ZLB_PPIHelper.tcpClient.Connect(IPAddress.Parse(txtIP.Text), int.Parse(txtPort.Text));
+                //ZLB_PPIHelper.tcpClient.Connect(IPAddress.Parse(txtIP.Text), int.Parse(txtPort.Text));
 
 
-           
+
 
             }
             catch (SocketException ex)
@@ -587,8 +569,8 @@ namespace testPPI
 
         private void btnClose_Click(object sender, EventArgs e)
         {
-           
-            tcpClient.Close();
+
+            client.Close();
         }
     }
 }

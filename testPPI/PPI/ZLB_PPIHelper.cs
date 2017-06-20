@@ -43,19 +43,22 @@ namespace testPPI.PPI
         //    data[5] = 0x05;
 
 
-        public static byte[] MeiColoudReadBytes = {0xAA, 0x00, 0x00, 0x44, 0x03};
-
-     
+        public static byte[] MeiColoudReadBytes = { 0xAA, 0x00, 0x00, 0x44, 0x03 };
 
         #region 读
 
+        #region Readbit
         //读取某个位的状态
-        public static bool Readbit(Socket tcpClient,int ComNum, int ByteAddress, int bitnumber, Enums.StorageType storageType,
-            out byte[] bitValue, int plcAddress=2)
+        public static bool Readbit(Socket tcpClient, int ComNum, int ByteAddress, int bitnumber,
+            Enums.StorageType storageType,
+            out byte[] bitValue, int plcAddress = 2)
         {
-
+            //var client = new SimpleTcpClient().Connect("127.0.0.1", 8910);
+            //var replyMsg = client.WriteLineAndGetReply("Hello world!", TimeSpan.FromSeconds(3));
+            bitValue = new byte[1];
 
             #region 字符串拼接
+
             PPIAddress ppiAddress = new PPIAddress();
             ppiAddress.DAddress = Convert.ToByte(plcAddress);
 
@@ -63,15 +66,16 @@ namespace testPPI.PPI
 
             int i, Rece = 0;
             byte fcs;
-            byte[] Receives = new byte[28];
-            if (storageType == Enums.StorageType.T)
-            {
-                Receives = new byte[32];
-            }
-            if (storageType == Enums.StorageType.C)
-            {
-                Receives = new byte[30];
-            }
+            int ReceivesByteSize = 35;
+          //  byte[] Receives = new byte[ReceivesByteSize];
+            //if (storageType == Enums.StorageType.T)
+            //{
+            //    Receives = new byte[ReceivesByteSize + 4];
+            //}
+            //if (storageType == Enums.StorageType.C)
+            //{
+            //    Receives = new byte[ReceivesByteSize + 2];
+            //}
             ByteAddress = ByteAddress * 8 + bitnumber;
             Rbyte[22] = 0x01; //Byte 22 为读取数据的长度,01： 1 Bit 02： 1 Byte 04： 1 Word 06： Double Word
             if (storageType == Enums.StorageType.T)
@@ -115,60 +119,183 @@ namespace testPPI.PPI
 
             //Wbit = new byte[] { 0 };
 
-            SendData = GetSendData(SendData);
-
-            sendCmd = ByteHelper.ByteToString(SendData); 
             #endregion
-
-
+            
             //接收到的数据：AA 00 02 44 03 05 E5 A5 
 
             bool flag = false;
-         
-            byte []receivesAffirm=new byte[8];
+            byte[] Receives=   ReceiveReadByte(tcpClient, SendData, ppiAddress, ComNum);
 
-            tcpClient.Send(SendData);
-
-            StateObject state = new StateObject();
-            state.workSocket = tcpClient;
-
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
-
-            tcpClient.BeginReceive(receivesAffirm, 0, receivesAffirm.Length, 0, new AsyncCallback(ReceiveCallback), state);
-
-           
-
-            if (sw.Elapsed > TimeSpan.FromSeconds(3))
+            if (Receives!=null)
             {
-                receiveDone.Set();
-            }
 
-            receiveDone.WaitOne();
-            sw.Stop();
 
-            if (receivesAffirm[5]==Convert.ToByte(ComNum)&& receivesAffirm[6]== ppiAddress.confirm)
-            {
-                tcpClient.Send(ppiAddress.Affirm);
+                flag = true;
 
-              
-                tcpClient.BeginReceive(Receives, 0, Receives.Length, 0, new AsyncCallback(ReceiveCallback), null);
+                bitValue[0] = Receives[Receives.Length - 4];
 
-                Stopwatch sw2 = new Stopwatch();
-                sw2.Start();
-
-                if (sw2.Elapsed > TimeSpan.FromSeconds(1))
-                {
-                    receiveDone.Set();
-                }
-                sw2.Stop();
-                receiveDone.WaitOne();
+                receiveByte = ByteHelper.ByteToString(Receives);
             }
             
-            bitValue = Receives;
-          
             return flag;
         }
+        #endregion
+
+        #region ReadBytes
+
+        public static bool Readbytes(Socket tcpClient, int Address, Enums.StorageType storageType, out byte[] readValue, int ComNum, int byteCount = 1)
+        {
+
+            if (byteCount > 200 || byteCount == 0 || byteCount < 0)
+            {
+                readValue = new byte[] { 0 };
+                return false;
+            }
+            int i, Rece = 0;
+            byte fcs;
+            //byte[] Receives = new byte[34 + byteCount];
+            Address = Address * 8;
+            PPIAddress ppiAddress = new PPIAddress();
+
+            byte[] Rbyte = ppiAddress.Rbyte;
+
+            Rbyte[22] = 0x02;//Byte 22 为读取数据的长度,01： 1 Bit 02： 1 Byte 04： 1 Word 06： Double Word
+            Rbyte[24] = Convert.ToByte(byteCount);//一次读取的个数
+
+            if (storageType == Enums.StorageType.V)
+            {
+                Rbyte[26] = 0x01;
+            }
+            else
+            {
+                Rbyte[26] = 0x00;
+            }
+            Rbyte[27] = (byte)storageType;
+
+            // buffer[11] = Convert.ToByte(address & 0xff);//地位，如320H，结果为20
+            //buffer[10] = Convert.ToByte((address / 0x100) & 0xff);//0x100 ->256
+            //buffer[9] = Convert.ToByte(address / 0x10000);
+            Rbyte[28] = Convert.ToByte(Address / 0x10000);
+            Rbyte[29] = Convert.ToByte((Address / 0x100) & 0xff);//0x100 ->256;
+            Rbyte[30] = Convert.ToByte(Address & 0xff);//低位，如320H，结果为20;
+            //Rbyte[28] = fbyte3;
+            //Rbyte[29] = fbyte2;
+            //Rbyte[30] = fbyte1;
+            for (i = 4, fcs = 0; i < 31; i++)
+            {
+                fcs += Rbyte[i];
+            }
+
+            int tt = Convert.ToInt32(fcs) % 256;//添加的代码 mod 256
+
+            Rbyte[31] = Convert.ToByte(tt);
+            //  Rbyte[31] = fcs;
+
+
+            Rbyte = ByteHelper.MergerArray(new byte[] { Convert.ToByte(ComNum) }, Rbyte);
+
+            bool flag = false;
+          
+            byte[] Receives = ReceiveReadByte(tcpClient, Rbyte, ppiAddress, ComNum);
+            if (Receives != null)
+            {
+              
+                flag = true;
+                receiveByte = ByteHelper.ByteToString(Receives);
+
+                // serialPort1.Close();
+                readValue = new byte[byteCount];
+                if (storageType == Enums.StorageType.T)
+                {
+                    for (int j = 0; j < byteCount; j++)
+                    {
+                        readValue[j] = Receives[31 + j];
+                    }
+                }
+                else
+                {
+                    for (int j = 0; j < byteCount; j++)
+                    {
+                        readValue[j] = Receives[31 + j];
+
+                    }
+
+                }
+                return flag;
+            }
+            
+            readValue = new byte[] { 0 };
+            return flag;
+
+        }
+
+
+
+        #endregion
+
+        public static byte[] ReceiveReadByte(Socket tcpClient,byte [] Rbyte,PPIAddress ppiAddress,int ComNum)
+        {
+            byte[] Receives=new byte[100];
+            Rbyte = GetSendData(Rbyte);
+
+            sendCmd = ByteHelper.ByteToString(Rbyte);
+
+
+            bool flag = false;
+
+            byte[] receivesAffirm = new byte[8];
+            try
+            {
+                tcpClient.Send(Rbyte);
+
+                int n = tcpClient.Receive(receivesAffirm);
+                if (n > 0)
+                {
+                    if (receivesAffirm[5] == Convert.ToByte(ComNum) && receivesAffirm[6] == ppiAddress.confirm)
+                    {
+                        Rbyte = ByteHelper.MergerArray(new byte[] { Convert.ToByte(ComNum) }, ppiAddress.Affirm);
+
+                        Rbyte = GetSendData(Rbyte);
+
+                        tcpClient.Send(Rbyte);
+                    
+                        int m = tcpClient.Receive(Receives);
+
+                        if (m > 0)
+                        {
+                          int ReceiveDataCount = 0;
+                            for (int i = Receives.Length-1; i>=0; i--)
+                            {
+                                if (Receives[i]!=0)
+                                {
+                                    ReceiveDataCount = i;
+                                    break;
+                                }
+                            }
+                            byte [] ReceivesResult=new byte[ReceiveDataCount + 1];
+                            Array.Copy(Receives, 0, ReceivesResult, 0, ReceiveDataCount+1);
+                            
+                            return ReceivesResult;
+                            
+                        }
+
+                    }
+
+                }
+            }
+            catch (Exception ex)
+            {
+
+                throw ex;
+            }
+
+          
+            return null;
+
+
+        }
+
+        
 
         #region Socket 函数
         public static void myReadCallBack(IAsyncResult iar)
@@ -213,10 +340,10 @@ namespace testPPI.PPI
             {
                 // Retrieve the state object and the client socket     
                 // from the asynchronous state object.     
-                
+
                 StateObject state = (StateObject)ar.AsyncState;
                 Socket client = state.workSocket;
-                
+
                 // Read data from the remote device.     
                 int bytesRead = client.EndReceive(ar);
                 if (bytesRead > 0)
@@ -247,7 +374,7 @@ namespace testPPI.PPI
 
         private static void Send(Socket client, byte[] byteData)
         {
-              
+
             client.BeginSend(byteData, 0, byteData.Length, 0, new AsyncCallback(SendCallback), client);
         }
         private static void SendCallback(IAsyncResult ar)
@@ -272,45 +399,19 @@ namespace testPPI.PPI
 
 
 
-        public static byte[] GetSendData(byte[] data)
-        {
-
-            byte[] SendData = new byte[] {};
-            MeiColoudReadBytes[1] = Convert.ToByte(data.Length/256);
-            MeiColoudReadBytes[2] = Convert.ToByte(data.Length%256);
-
-            SendData = ByteHelper.MergerArray(MeiColoudReadBytes, data);
-
-            byte CheckSum = 0;
-
-            SendData = ByteHelper.MergerArray(SendData, new byte[] {CheckSum});
-
-            CheckSum = MeiCloudHelper.GetCheckSum(SendData);
-
-            SendData[SendData.Length - 1] = CheckSum;
-
-
-
-            return SendData;
-
-
-
-        }
-
-
-
 
         #endregion
 
 
         #region 写
 
-    
 
-        public static bool WriteBit(TcpClient tcpClient,int ComNum, int ByteAddress, byte bitnumber, Enums.StorageType storageType,
-            int WriteValue,int plcAddress=2)
+
+        #region WriteBit
+        public static bool WriteBit(Socket tcpClient, int ComNum, int ByteAddress, byte bitnumber, Enums.StorageType storageType,
+        int WriteValue, int plcAddress = 2)
         {
-            #region byte数组
+          
             if (WriteValue > 255)
             {
                 return false;
@@ -318,8 +419,7 @@ namespace testPPI.PPI
 
             int i, Rece = 0;
             byte fcs;
-            byte[] Receives = new byte[24];
-
+     
             bool flag = false;
 
             PPIAddress ppiAddress = new PPIAddress();
@@ -365,69 +465,96 @@ namespace testPPI.PPI
             Wbit[36] = Convert.ToByte(tt);
 
             byte[] SendData = ByteHelper.MergerArray(new byte[] { Convert.ToByte(ComNum) }, Wbit);
-
-            //Wbit = new byte[] { 0 };
-
-            SendData = GetSendData(SendData); 
-            #endregion
-
-            tcpClient.Client.Send(SendData);
-
-             sendCmd = ByteHelper.ByteToString(SendData);
-
-            byte[] rece = new byte[100];
-        tcpClient.Client.BeginReceive(rece, 0, rece.Length, SocketFlags.None,
-                new AsyncCallback(ReceiveCallback), null);
+            
+            return WriteData(tcpClient, SendData, ppiAddress, ComNum);
+            
+        }
+        #endregion
 
 
-            receiveDone.WaitOne();
-            byte[] receivesAffirm = new byte[8];
+        #region WriteByte
 
-            if (receivesAffirm[5] == Convert.ToByte(ComNum) && receivesAffirm[6] == ppiAddress.confirm)
+        public static bool Writebyte(Socket tcpClient, int ByteAddress, Enums.StorageType storageType, int WriteValue, int ComNum)
+        {
+
+            if (WriteValue > 255)
             {
-                tcpClient.Client.Send(ppiAddress.Affirm);
+                return false;
+            }//最大写入值255
+            int i, Rece = 0;
+            byte fcs;
 
 
-                tcpClient.Client.BeginReceive(Receives, 0, Receives.Length, 0, new AsyncCallback(ReceiveCallback), null);
+            bool flag = false;
 
-                receiveDone.WaitOne();
-            }
+            PPIAddress ppiAddress = new PPIAddress();
 
-            if (Receives[0]==ppiAddress.confirm)
+            byte[] Wbyte = ppiAddress.Wbyte;
+
+            ByteAddress = ByteAddress * 8;
+            Wbyte[22] = 0x02;//Byte 22 为读取数据的长度,01： 1 Bit 02： 1 Byte 04： 1 Word 06： Double Word
+            Wbyte[24] = 0x01;// Byte 24 为数据个数：这里是 01，一次读一个数据
+            if (storageType == Enums.StorageType.V)
             {
-                flag = true;
+                Wbyte[26] = 0x01;
             }
             else
             {
-                int n = 0;
-                for (int j = 0; j < Receives.Length; j++)
-                {
-                    if (Receives[j]!=ppiAddress.WriteReceivesCheck[i])
-                    {
-                        n++;
-                        break;
-                    }
+                Wbyte[26] = 0x00;
+            }
+            Wbyte[27] = (byte)storageType;
 
-                }
-                if (n==0)
-                {
-                    flag = true;
-                }
+            //偏移量,byte 28,29,30 存储器偏移量指针 （存储器地址 *8 ）：
+            //  如 VB100，存储器地址为 100，偏移量指针为 800，转换成 16 
+            //进制就是 320H，则 Byte 28~29 这三个字节就是： 00 03 20
+
+            // buffer[11] = Convert.ToByte(address & 0xff);//地位，如320H，结果为20
+            //buffer[10] = Convert.ToByte((address / 0x100) & 0xff);//0x100 ->256
+            //buffer[9] = Convert.ToByte(address / 0x10000);
+            Wbyte[28] = Convert.ToByte(ByteAddress / 0x10000);
+            Wbyte[29] = Convert.ToByte((ByteAddress / 0x100) & 0xff);//0x100 ->256;
+            Wbyte[30] = Convert.ToByte(ByteAddress & 0xff);//低位，如320H，结果为20;
+
+            Wbyte[32] = 0x04;
+            Wbyte[34] = 0x08;
+
+
+            Wbyte[35] = Convert.ToByte(WriteValue);
+            for (i = 4, fcs = 0; i < 36; i++)
+            {
+                fcs += Wbyte[i];
             }
 
-            return flag;
+            int tt = Convert.ToInt32(fcs) % 256;//添加的代码 mod 256
+
+            Wbyte[36] = Convert.ToByte(tt);
+
+
+            byte[] SendData = ByteHelper.MergerArray(new byte[] { Convert.ToByte(ComNum) }, Wbyte);
+
+           
+         return   WriteData(tcpClient, SendData, ppiAddress, ComNum);
 
         }
 
+        #endregion
 
-        public static bool IsWriteSuccess(byte[] Receives)
+
+#endregion
+
+
+        public static bool IsWriteSuccess(byte[] Receives, PPIAddress ppiAddress, int ComNum)
         {
-            
 
-            byte[] ReceivesCheck = { 0x68, 0x12, 0x12, 0x68, 0x00, 0x02, 0x08, 0x32, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x01, 0x00, 0x00, 0x05, 0x01, 0xFF, 0x47, 0x16 };
+            byte[] ReceivesCheck = ByteHelper.MergerArray(new byte[] { Convert.ToByte(ComNum) }, ppiAddress.WriteReceivesCheck);
+
+            //Wbit = new byte[] { 0 };
+
+            ReceivesCheck = GetSendData(ReceivesCheck);
+
             int n = 0;
 
-            for (int j = 0; j < 24; j++)
+            for (int j = 0; j < ReceivesCheck.Length; j++)
             {
                 if (Receives[j] != ReceivesCheck[j])
                 {
@@ -446,9 +573,93 @@ namespace testPPI.PPI
 
         }
 
-       
 
-        #endregion
+        public static bool WriteData(Socket tcpClient, byte[] SendData, PPIAddress ppiAddress, int ComNum)
+        {
+
+
+            SendData = GetSendData(SendData);
+
+            sendCmd = ByteHelper.ByteToString(SendData);
+
+            bool flag = false;
+            byte[] receivesAffirm = new byte[8];
+            try
+            {
+                tcpClient.Send(SendData);
+
+                int n = tcpClient.Receive(receivesAffirm);
+                if (n > 0)
+                {
+                    if (receivesAffirm[5] == Convert.ToByte(ComNum) && receivesAffirm[6] == ppiAddress.confirm)
+                    {
+                        SendData = ByteHelper.MergerArray(new byte[] { Convert.ToByte(ComNum) }, ppiAddress.Affirm);
+
+                        //Wbit = new byte[] { 0 };
+
+                        SendData = GetSendData(SendData);
+
+                        tcpClient.Send(SendData);
+
+                        string str = ByteHelper.ByteToString(SendData);
+
+                        byte[] Receives = new byte[ppiAddress.WriteReceivesCheck.Length + 7];
+                        int m = tcpClient.Receive(Receives);
+
+                        if (m > 0)
+                        {
+
+                            flag = IsWriteSuccess(Receives, ppiAddress, ComNum);
+                            receiveByte = ByteHelper.ByteToString(Receives);
+                        }
+                    }
+
+                }
+            }
+            catch (Exception ex)
+            {
+
+                throw ex;
+            }
+
+
+
+            return flag;
+
+
+
+
+        }
+
+
+
+        #region 其他函数
+
+
+        public static byte[] GetSendData(byte[] data)
+        {
+
+            byte[] SendData = new byte[] { };
+            MeiColoudReadBytes[1] = Convert.ToByte(data.Length / 256);
+            MeiColoudReadBytes[2] = Convert.ToByte(data.Length % 256);
+
+            SendData = ByteHelper.MergerArray(MeiColoudReadBytes, data);
+
+            byte CheckSum = 0;
+
+            SendData = ByteHelper.MergerArray(SendData, new byte[] { CheckSum });
+
+            CheckSum = MeiCloudHelper.GetCheckSum(SendData);
+
+            SendData[SendData.Length - 1] = CheckSum;
+
+
+
+            return SendData;
+
+
+
+        }
 
 
         public static void PortTimeout(int byteLength, TimeSpan ts1, SerialPort port)
@@ -470,6 +681,14 @@ namespace testPPI.PPI
             }
 
         }
+
+
+
+
+
+        #endregion
+
+
 
 
 
