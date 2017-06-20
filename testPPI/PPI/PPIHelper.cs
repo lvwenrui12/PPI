@@ -1208,6 +1208,8 @@ namespace testPPI.PPI
         }
 
         public static byte[] TWritebyte = PAddress.TWritebyte;
+
+
         public static bool TwriteDWord(int byteAddress, long writeValue)
         {
 
@@ -1273,9 +1275,7 @@ namespace testPPI.PPI
                 
         public static bool CWriteWord(int byteAddress, int writeValue)
         {
-
-
-
+            
             if (writeValue > 65536)
             {
                 return false;

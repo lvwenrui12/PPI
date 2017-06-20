@@ -200,47 +200,46 @@ namespace testPPI
                             break;
 
 
-                        //case "Word":
-                        //    if (txtReadCount.Text.Length == 0)
-                        //    {
-                        //        if (ZLB_PPIHelper.ReadWords(Int32.Parse(txtAddress.Text),
+                        case "Word":
+                            if (txtReadCount.Text.Length == 0)
+                            {
+                                if (ZLB_PPIHelper.ReadWords(client,Int32.Parse(txtAddress.Text),
 
-                        //       (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                        //      out readValues))
-                        //        {
-                        //            flag = true;
-                        //        }
-                        //        ;
-                        //    }
-                        //    else
-                        //    {
-                        //        if (ZLB_PPIHelper.ReadWords(Int32.Parse(txtAddress.Text),
+                               (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
+                              out readValues,int.Parse(txtComNum.Text)))
+                                {
+                                    flag = true;
+                                }
+                                ;
+                            }
+                            else
+                            {
+                                if (ZLB_PPIHelper.ReadWords(client,Int32.Parse(txtAddress.Text),
 
-                        //      (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                        //      out readValues, Int32.Parse(txtReadCount.Text)))
-                        //        {
-                        //            flag = true;
-                        //        }
+                              (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
+                              out readValues, int.Parse(txtComNum.Text),Int32.Parse(txtReadCount.Text)))
+                                {
+                                    flag = true;
+                                }
 
-                        //    }
+                            }
+                            txtSendCmd.Text = ZLB_PPIHelper.sendCmd;
+                            break;
 
-                        //    txtSendCmd.Text = ByteToString(ZLB_PPIHelper.Rbyte);
-                        //    break;
+                        case "DWord":
 
-                        //case "DWord":
+                            if (ZLB_PPIHelper.ReadDoubleWord(client,Int32.Parse(txtAddress.Text),
 
-                        //    if (ZLB_PPIHelper.ReadDWord(Int32.Parse(txtAddress.Text),
-
-                        //   (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                        //   out readValues))
-                        //    {
-                        //        flag = true;
-                        //    }
-                        //    txtSendCmd.Text = ByteToString(ZLB_PPIHelper.Rbyte);
-
+                           (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
+                           out readValues,int.Parse(txtComNum.Text)))
+                            {
+                                flag = true;
+                            }
+                            txtSendCmd.Text = (ZLB_PPIHelper.sendCmd);
 
 
-                        //    break;
+
+                            break;
 
                         default:
 
@@ -325,47 +324,47 @@ namespace testPPI
 
 
                                     break;
-                                //case "Byte":
+                                case "Byte":
 
-                                //    if (ZLB_PPIHelper.Writebyte(Int32.Parse(txtAddress.Text),
+                                    if (ZLB_PPIHelper.Writebyte(client,Int32.Parse(txtAddress.Text),
 
-                                //       (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                                //    wValue))
-                                //    {
-                                //        flag = true;
-                                //        txtSendCmd.Text = ByteToString(ZLB_PPIHelper.Wbyte);
-                                //    }
+                                       (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
+                                    wValue,int.Parse(txtComNum.Text)))
+                                    {
+                                        flag = true;
+                                        txtSendCmd.Text = (ZLB_PPIHelper.sendCmd);
+                                    }
 
-                                //    break;
-
-
-                                //case "Word":
-
-                                //    if (ZLB_PPIHelper.WriteWord(Int32.Parse(txtAddress.Text),
-
-                                //   (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                                // wValue))
-                                //    {
-
-                                //        txtSendCmd.Text = ByteToString(ZLB_PPIHelper.Wword);
-                                //        flag = true;
-                                //    }
+                                    break;
 
 
-                                //    break;
-                                //case "DWord":
+                                case "Word":
 
-                                //    if (ZLB_PPIHelper.WriteDWord(Int32.Parse(txtAddress.Text),
+                                    if (ZLB_PPIHelper.WriteWord(client,Int32.Parse(txtAddress.Text),
 
-                                //   (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                                //   wValue))
-                                //    {
-                                //        flag = true;
+                                   (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
+                                 wValue,int.Parse(txtComNum.Text)))
+                                    {
 
-                                //        txtSendCmd.Text = ByteToString(ZLB_PPIHelper.WDword);
+                                        txtSendCmd.Text = (ZLB_PPIHelper.sendCmd);
+                                        flag = true;
+                                    }
 
-                                //    }
-                                //    break;
+
+                                 break;
+                                case "DWord":
+
+                                    if (ZLB_PPIHelper.WriteDoubleWord(client,Int32.Parse(txtAddress.Text),
+
+                                   (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
+                                   wValue,Int32.Parse(txtComNum.Text)))
+                                    {
+                                        flag = true;
+
+                                        txtSendCmd.Text = (ZLB_PPIHelper.sendCmd);
+
+                                    }
+                                    break;
 
                                 default:
 

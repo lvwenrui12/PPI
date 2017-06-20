@@ -190,8 +190,7 @@ namespace testPPI.PPI
 
             Rbyte[31] = Convert.ToByte(tt);
             //  Rbyte[31] = fcs;
-
-
+            
             Rbyte = ByteHelper.MergerArray(new byte[] { Convert.ToByte(ComNum) }, Rbyte);
 
             bool flag = false;
@@ -229,9 +228,150 @@ namespace testPPI.PPI
 
         }
 
+        #endregion
+
+        #region ReadWords
+
+        public static bool ReadWords(Socket tcpClient,int Address, Enums.StorageType storageType, out byte[] WordValue,int ComNum ,int WordCount = 1)
+        {
+            if (WordCount > 128 || WordCount == 0 || WordCount < 0)
+            {
+                WordValue = new byte[] { 0 };
+                return false;
+            }
+            int i, Rece = 0;
+            byte fcs;
+          
+            PPIAddress ppiAddress = new PPIAddress();
+
+            byte[] Rbyte = ppiAddress.Rbyte;
+
+           
+            Address = Address * 8;
+
+            if (storageType == Enums.StorageType.C)
+            {
+                Rbyte[22] = 0x1e;
+            }
+            else
+            {
+
+                Rbyte[22] = 0x04;//Byte 22 为读取数据的长度,01： 1 Bit 02： 1 Byte 04： 1 Word 06： Double Word
+            }
+
+            Rbyte[24] = Convert.ToByte(WordCount);//一次读取的个数
+
+            if (storageType == Enums.StorageType.V)
+            {
+                Rbyte[26] = 0x01;
+            }
+            else
+            {
+                Rbyte[26] = 0x00;
+            }
+            Rbyte[27] = (byte)storageType;
+
+            Rbyte[28] = Convert.ToByte(Address / 0x10000);
+            Rbyte[29] = Convert.ToByte((Address / 0x100) & 0xff);//0x100 ->256;
+            Rbyte[30] = Convert.ToByte(Address & 0xff);//低位，如320H，结果为20;
+        
+            for (i = 4, fcs = 0; i < 31; i++)
+            {
+                fcs += Rbyte[i];
+            }
+            int tt = Convert.ToInt32(fcs) % 256;//添加的代码 mod 256
+
+            Rbyte[31] = Convert.ToByte(tt);
+
+
+            Rbyte = ByteHelper.MergerArray(new byte[] { Convert.ToByte(ComNum) }, Rbyte);
+
+            bool flag = false;
+
+            byte[] Receives = ReceiveReadByte(tcpClient, Rbyte, ppiAddress, ComNum);
+
+            if (Receives!=null)
+            {
+                flag = true;
+                WordValue = new byte[WordCount * 2];
+
+                for (int j = 0; j < WordValue.Length; j++)
+                {
+                    WordValue[WordValue.Length - 1 - j] = Receives[Receives.Length - 4 - j];
+                }
+                receiveByte = ByteHelper.ByteToString(Receives);
+                return flag;
+            }
+            
+            WordValue = new byte[] { 0 };
+            return false;
+        }
+
+
+
 
 
         #endregion
+
+        #region ReadDoubleWord
+
+        public static bool ReadDoubleWord(Socket tcpClient,int Address, Enums.StorageType storageType, out byte[] WordValue,int ComNum)
+        {
+            int i, Rece = 0;
+            byte fcs;
+          
+            PPIAddress ppiAddress = new PPIAddress();
+
+            byte[] Rbyte = ppiAddress.Rbyte;
+
+            Address = Address * 8;
+            Rbyte[22] = 0x06;//Byte 22 为读取数据的长度,01： 1 Bit 02： 1 Byte 04： 1  Word 06： Double Word
+            Rbyte[24] = 0x01;//一次读取的个数
+
+            if (storageType == Enums.StorageType.V)
+            {
+                Rbyte[26] = 0x01;
+            }
+            else
+            {
+                Rbyte[26] = 0x00;
+            }
+            Rbyte[27] = (byte)storageType;
+
+            Rbyte[28] = Convert.ToByte(Address / 0x10000);
+            Rbyte[29] = Convert.ToByte((Address / 0x100) & 0xff);//0x100 ->256;
+            Rbyte[30] = Convert.ToByte(Address & 0xff);//低位，如320H，结果为20;
+         
+            for (i = 4, fcs = 0; i < 31; i++)
+            {
+                fcs += Rbyte[i];
+            }
+            int tt = Convert.ToInt32(fcs) % 256;//添加的代码 mod 256
+
+            Rbyte[31] = Convert.ToByte(tt);
+
+            Rbyte = ByteHelper.MergerArray(new byte[] { Convert.ToByte(ComNum) }, Rbyte);
+
+            bool flag = false;
+
+            byte[] Receives = ReceiveReadByte(tcpClient, Rbyte, ppiAddress, ComNum);
+
+            if (Receives!=null)
+            {
+                flag = true;
+                WordValue = new byte[4] { Receives[31], Receives[32], Receives[33], Receives[34] };
+
+                receiveByte = ByteHelper.ByteToString(Receives);
+                return flag;
+            }
+            
+            WordValue = new byte[] { 0 };
+            return false;
+        }
+
+        #endregion
+
+
 
         public static byte[] ReceiveReadByte(Socket tcpClient,byte [] Rbyte,PPIAddress ppiAddress,int ComNum)
         {
@@ -540,7 +680,144 @@ namespace testPPI.PPI
         #endregion
 
 
-#endregion
+
+        #region WriteWord
+
+        public static bool WriteWord(Socket tcpClient,int byteAddress, Enums.StorageType storageType, int writeValue,int ComNum)
+        {
+
+            //if (WriteValue > 255)
+            //{
+            //    return false;
+            //}//最大写入值255
+            int i, Rece = 0;
+            byte fcs;
+            
+            byteAddress = byteAddress * 8;
+
+            bool flag = false;
+
+            PPIAddress ppiAddress = new PPIAddress();
+
+            byte[] Wword = ppiAddress.Wword;
+
+            Wword[22] = 0x04;//Byte 22 为读取数据的长度,01： 1 Bit 02： 1 Byte 04： 1 =Word06： Double Word
+            Wword[24] = 0x01;// Byte 24 为数据个数：这里是 01，一次读一个数据
+
+            if (storageType == Enums.StorageType.V)
+            {
+                Wword[26] = 0x01;
+            }
+            else
+            {
+                Wword[26] = 0x00;
+            }
+            Wword[27] = (byte)storageType;
+
+            //偏移量,byte 28,29,30 存储器偏移量指针 （存储器地址 *8 ）：
+            //  如 VB100，存储器地址为 100，偏移量指针为 800，转换成 16 
+            //进制就是 320H，则 Byte 28~29 这三个字节就是： 00 03 20
+
+            // buffer[11] = Convert.ToByte(address & 0xff);//地位，如320H，结果为20
+            //buffer[10] = Convert.ToByte((address / 0x100) & 0xff);//0x100 ->256
+            //buffer[9] = Convert.ToByte(address / 0x10000);
+            Wword[28] = Convert.ToByte(byteAddress / 0x10000);
+            Wword[29] = Convert.ToByte((byteAddress / 0x100) & 0xff);//0x100 ->256;
+            Wword[30] = Convert.ToByte(byteAddress & 0xff);//低位，如320H，结果为20;
+
+            Wword[32] = 0x04;
+
+            Wword[34] = 0x10;
+
+            Wword[35] = Convert.ToByte(writeValue / 256);
+            Wword[36] = Convert.ToByte(writeValue % 256);
+            for (i = 4, fcs = 0; i < Wword.Length - 2; i++)
+            {
+                fcs += Wword[i];
+            }
+
+            int tt = Convert.ToInt32(fcs) % 256;//添加的代码 mod 256
+
+            Wword[37] = Convert.ToByte(tt);
+
+            byte[] SendData = ByteHelper.MergerArray(new byte[] { Convert.ToByte(ComNum) }, Wword);
+
+            return WriteData(tcpClient, SendData, ppiAddress, ComNum);
+
+        }
+
+        #endregion
+
+        #region WriteDoubleWord 
+        public static bool WriteDoubleWord(Socket tcpClient,int byteAddress, Enums.StorageType storageType, long writeValue,int ComNum)
+        {
+
+            if (writeValue > uint.MaxValue)
+            {
+                return false;
+            }//最大写入值0xffffffff,4,294,967,295
+            int i, Rece = 0;
+            byte fcs;
+
+            bool flag = false;
+
+            PPIAddress ppiAddress = new PPIAddress();
+
+            byte[] WDword = ppiAddress.WDword;
+
+
+            byteAddress = byteAddress * 8;
+            WDword[22] = 0x06;//Byte 22 为读取数据的长度,01： 1 Bit 02： 1 Byte 04： 1 Word 06： Double Word
+            WDword[24] = 0x01;// Byte 24 为数据个数：这里是 01，一次读一个数据
+            if (storageType == Enums.StorageType.V)
+            {
+                WDword[26] = 0x01;
+            }
+            else
+            {
+                WDword[26] = 0x00;
+            }
+            
+            WDword[27] = (byte)storageType;
+
+            //偏移量,byte 28,29,30 存储器偏移量指针 （存储器地址 *8 ）：
+            //  如 VB100，存储器地址为 100，偏移量指针为 800，转换成 16 
+            //进制就是 320H，则 Byte 28~29 这三个字节就是： 00 03 20
+
+            // buffer[11] = Convert.ToByte(address & 0xff);//地位，如320H，结果为20
+            //buffer[10] = Convert.ToByte((address / 0x100) & 0xff);//0x100 ->256
+            //buffer[9] = Convert.ToByte(address / 0x10000);
+            WDword[28] = Convert.ToByte(byteAddress / 0x10000);
+            WDword[29] = Convert.ToByte((byteAddress / 0x100) & 0xff);//0x100 ->256;
+            WDword[30] = Convert.ToByte(byteAddress & 0xff);//低位，如320H，结果为20;
+
+            WDword[32] = 0x04;
+            WDword[34] = 0x20;
+
+            WDword[35] = Convert.ToByte(writeValue / 0x1000000);
+         
+            WDword[36] = Convert.ToByte((writeValue / 0x10000) & 0xff);
+            WDword[37] = Convert.ToByte((writeValue / 0x100) & 0xff);
+            WDword[38] = Convert.ToByte(writeValue % 256);
+
+            for (i = 4, fcs = 0; i < WDword.Length - 2; i++)
+            {
+                fcs += WDword[i];
+            }
+            int tt = Convert.ToInt32(fcs) % 256;//添加的代码 mod 256
+            WDword[WDword.Length - 2] = Convert.ToByte(tt);
+
+
+            byte[] SendData = ByteHelper.MergerArray(new byte[] { Convert.ToByte(ComNum) }, WDword);
+
+            return WriteData(tcpClient, SendData, ppiAddress, ComNum);
+            
+        }
+
+
+        #endregion
+
+
 
 
         public static bool IsWriteSuccess(byte[] Receives, PPIAddress ppiAddress, int ComNum)
@@ -632,6 +909,7 @@ namespace testPPI.PPI
         }
 
 
+        #endregion
 
         #region 其他函数
 
