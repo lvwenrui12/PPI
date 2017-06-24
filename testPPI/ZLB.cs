@@ -149,11 +149,11 @@ namespace testPPI
                 if ((Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text) == Enums.StorageType.T)
                 {
 
-                    //if (ZLB_PPIHelper.TReadDword(Int32.Parse(txtAddress.Text), out readValues))
-                    //{
-                    //    flag = true;
-                    //}
-                    //txtSendCmd.Text = ByteToString(ZLB_PPIHelper.TReadByte);
+                    if (ZLB_PPIHelper.TReadDword(client,Int32.Parse(txtAddress.Text), out readValues,int.Parse(txtComNum.Text)))
+                    {
+                        flag = true;
+                    }
+                    txtSendCmd.Text = (ZLB_PPIHelper.sendCmd);
 
                 }
                 else
@@ -276,12 +276,11 @@ namespace testPPI
             }
             else
             {
-                //if ((Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text)==Enums.StorageType.C|| (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text)==Enums.StorageType.T)
-                //{
-                //    MessageBox.Show("T，C寄存器等不能用写命令写入");
-                //    return;
-
-                //}
+                if ((Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text) == Enums.StorageType.C || (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text) == Enums.StorageType.T)
+                {
+                    MessageBox.Show("T，C寄存器等不能用写命令写入");
+                    return;
+                }
 
                 if (client.Connected)
                 {
@@ -289,21 +288,19 @@ namespace testPPI
                     {
                         if ((Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text) == Enums.StorageType.T)
                         {
-                            //if (ZLB_PPIHelper.TwriteDWord(Int32.Parse(txtAddress.Text), wValue))
-                            //{
-                            //    flag = true;
-                            //    txtSendCmd.Text = ByteToString(ZLB_PPIHelper.TWritebyte);
-
-                            //}
+                            if (ZLB_PPIHelper.TwriteDWord(client,Int32.Parse(txtAddress.Text), wValue,int.Parse(txtComNum.Text)))
+                            {
+                                flag = true;
+                                txtSendCmd.Text = (ZLB_PPIHelper.sendCmd);
+                            }
                         }
                         else if ((Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text) == Enums.StorageType.C)
                         {
-                            //if (ZLB_PPIHelper.CWriteWord(Int32.Parse(txtAddress.Text), wValue))
-                            //{
-                            //    flag = true;
-                            //    txtSendCmd.Text = ByteToString(ZLB_PPIHelper.CwriteWordByte);
-
-                            //}
+                            if (ZLB_PPIHelper.CWriteWord(client,Int32.Parse(txtAddress.Text), wValue,int.Parse(txtComNum.Text)))
+                            {
+                                flag = true;
+                                txtSendCmd.Text = (ZLB_PPIHelper.sendCmd);
+                            }
                         }
                         else
                         {
@@ -334,10 +331,7 @@ namespace testPPI
                                         flag = true;
                                         txtSendCmd.Text = (ZLB_PPIHelper.sendCmd);
                                     }
-
                                     break;
-
-
                                 case "Word":
 
                                     if (ZLB_PPIHelper.WriteWord(client,Int32.Parse(txtAddress.Text),

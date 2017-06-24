@@ -15,7 +15,7 @@ namespace testPPI
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new ZLB());
+            Application.Run(new MyPPI());
         }
     }
 }

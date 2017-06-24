@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO.Ports;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using testPPI.Common;
 
 namespace testPPI.PPI
 {
@@ -14,49 +16,48 @@ namespace testPPI.PPI
 
 
 
-        public  static  PPIAddress PAddress=new PPIAddress();
 
-       
-        public static byte[] receiveByte;
-        
+        public static string receiveByte;
+
+        public static string sendCmd;
+
+
+
         public static System.IO.Ports.SerialPort serialPort1 = new SerialPort();
-    
-      
-        public static byte[] Rbyte = PAddress.Rbyte;
+
+
+
 
         #region 读
 
         //读取某个位的状态
-        public static bool Readbit(int ByteAddress, int bitnumber, Enums.StorageType storageType, out byte[] bitValue)
+        public static bool Readbit(int ByteAddress, int bitnumber, Enums.StorageType storageType, out byte[] bitValue, int plcAdd)
         {
-            PAddress.DAddress = 0x0c;
 
             bitValue = new byte[1];
 
             int i, Rece = 0;
             byte fcs;
-            byte[] Receives = new byte[28];
-            if (storageType == Enums.StorageType.T)
-            {
-                Receives = new byte[32];
-            }
-            if (storageType == Enums.StorageType.C)
-            {
-                Receives = new byte[30];
-            }
+            //byte[] Receives = new byte[28];
+            //if (storageType == Enums.StorageType.T)
+            //{
+            //    Receives = new byte[32];
+            //}
+            //if (storageType == Enums.StorageType.C)
+            //{
+            //    Receives = new byte[30];
+            //}
 
             if (!serialPort1.IsOpen)
             {
                 serialPort1.Open();
             }
-            //if (storageType == Enums.StorageType.SM)
-            //{
-            //    ByteAddress = 10000 + ByteAddress * 8 + bitnumber;
-            //}
-            //else
-            //{
-            //    ByteAddress = ByteAddress * 8 + bitnumber;
-            //}
+
+
+            PPIAddress ppiAddress = new PPIAddress();
+
+            ppiAddress.DAddress = Convert.ToByte(plcAdd);
+            byte[] Rbyte = ppiAddress.Rbyte;
             ByteAddress = ByteAddress * 8 + bitnumber;
             Rbyte[22] = 0x01;//Byte 22 为读取数据的长度,01： 1 Bit 02： 1 Byte 04： 1 Word 06： Double Word
             if (storageType == Enums.StorageType.T)
@@ -94,56 +95,31 @@ namespace testPPI.PPI
             {
                 fcs += Rbyte[i];
 
-
             }
 
             int tt = Convert.ToInt32(fcs) % 256;//添加的代码 mod 256
 
             Rbyte[31] = Convert.ToByte(tt);
 
-            serialPort1.DiscardInBuffer();
-            serialPort1.DiscardOutBuffer();
+            byte[] Receives = ReceiveReadByte(serialPort1, Rbyte, ppiAddress);
 
-            string str = ByteToString(Rbyte);
-            serialPort1.Write(Rbyte, 0, 33);
-            while (serialPort1.BytesToRead == 0) {; }
-            Rece = serialPort1.ReadByte();
-            if (Rece == 0xE5)
+            if (Receives != null)
             {
-                serialPort1.DiscardInBuffer();
-                serialPort1.DiscardOutBuffer();
-
-                serialPort1.Write(PAddress.Affirm, 0, PAddress.Affirm.Length);
-                TimeSpan ts1 = new TimeSpan(DateTime.Now.Ticks);
-                while (serialPort1.BytesToRead < 27)//返回的数据比在串口助手少第一个数据 0x68
-                {
-                    System.Threading.Thread.Sleep(100);
-
-                    TimeSpan ts2 = new TimeSpan(DateTime.Now.Ticks);
-                    TimeSpan ts = ts2.Subtract(ts1).Duration();
-                    //如果接收时间超出设定时间，则直接退出
-                    if (ts.TotalMilliseconds > 5000)
-                    {
-
-                        return false;
-                    }
-
-                }// 长度为27
-
-                serialPort1.Read(Receives, 0, Receives.Length);
-                receiveByte = Receives;
+                receiveByte = ByteHelper.ByteToString(Receives);
                 bitValue[0] = Receives[Receives.Length - 3];
+
                 return true;
             }
+
             else
             {
-
+                bitValue = new byte[] { 0 };
                 return false;
             }
         }
 
 
-        public static bool Readbits(int ByteAddress, int bitnumber, Enums.StorageType storageType, out byte[] bitValue, int bitCount = 1)//测试失败
+        public static bool Readbits(int ByteAddress, int bitnumber, Enums.StorageType storageType, out byte[] bitValue, int plcAdd, int bitCount = 1)//测试失败
         {
             if (bitCount > 255 || bitCount == 0 || bitCount < 0)
             {
@@ -154,19 +130,22 @@ namespace testPPI.PPI
 
             int i, Rece = 0;
             byte fcs;
-            byte[] Receives = new byte[27 + bitCount];
+            //byte[] Receives = new byte[27 + bitCount];
 
-            if (storageType == Enums.StorageType.T)
-            {
-                Receives = new byte[31 + bitCount];
-            }
+            //if (storageType == Enums.StorageType.T)
+            //{
+            //    Receives = new byte[31 + bitCount];
+            //}
 
             if (!serialPort1.IsOpen)
             {
                 serialPort1.Open();
             }
 
+            PPIAddress ppiAddress = new PPIAddress();
+            ppiAddress.DAddress = Convert.ToByte(plcAdd);
             ByteAddress = ByteAddress * 8 + bitnumber;
+            byte[] Rbyte = ppiAddress.Rbyte;
             Rbyte[22] = 0x01;//Byte 22 为读取数据的长度,01： 1 Bit 02： 1 Byte 04： 1 Word 06： Double Word
             if (storageType == Enums.StorageType.T)
             {
@@ -185,13 +164,6 @@ namespace testPPI.PPI
             }
             Rbyte[27] = (byte)storageType;
 
-            //偏移量,byte 28,29,30 存储器偏移量指针 （存储器地址 *8 ）：
-            //  如 VB100，存储器地址为 100，偏移量指针为 800，转换成 16 
-            //进制就是 320H，则 Byte 28~29 这三个字节就是： 00 03 20
-
-            // buffer[11] = Convert.ToByte(address & 0xff);//地位，如320H，结果为20
-            //buffer[10] = Convert.ToByte((address / 0x100) & 0xff);//0x100 ->256
-            //buffer[9] = Convert.ToByte(address / 0x10000);
             Rbyte[28] = Convert.ToByte(ByteAddress / 0x10000);
             Rbyte[29] = Convert.ToByte((ByteAddress / 0x100) & 0xff);//0x100 ->256;
             Rbyte[30] = Convert.ToByte(ByteAddress & 0xff);//低位，如320H，结果为20;
@@ -205,39 +177,12 @@ namespace testPPI.PPI
 
             Rbyte[31] = Convert.ToByte(tt);
 
-        
 
-            serialPort1.DiscardInBuffer();
-            serialPort1.DiscardOutBuffer();
+            byte[] Receives = ReceiveReadByte(serialPort1, Rbyte, ppiAddress);
 
-            serialPort1.Write(Rbyte, 0, Rbyte.Length);
-            while (serialPort1.BytesToRead == 0) {; }
-            Rece = serialPort1.ReadByte();
-            if (Rece == 0xE5)
+            if (Receives != null)
             {
-                serialPort1.DiscardInBuffer();
-                serialPort1.DiscardOutBuffer();
-
-                serialPort1.Write(PAddress.Affirm, 0, PAddress.Affirm.Length);
-                TimeSpan ts1 = new TimeSpan(DateTime.Now.Ticks);
-                while (serialPort1.BytesToRead < Receives.Length - 1)//返回的数据比在串口助手少第一个数据 0x68
-                {
-                    System.Threading.Thread.Sleep(100);
-
-                    TimeSpan ts2 = new TimeSpan(DateTime.Now.Ticks);
-                    TimeSpan ts = ts2.Subtract(ts1).Duration();
-                    //如果接收时间超出设定时间，则直接退出
-                    if (ts.TotalMilliseconds > 5000)
-                    {
-                        bitValue = new byte[] { 0 };
-
-                        return false;
-                    }
-
-                }// 长度为27
-
-                serialPort1.Read(Receives, 0, Receives.Length);
-
+                receiveByte = ByteHelper.ByteToString(Receives);
                 bitValue = new byte[bitCount];
                 for (int j = 0; j < bitCount; j++)
                 {
@@ -246,26 +191,30 @@ namespace testPPI.PPI
 
                 return true;
             }
+
             else
             {
                 bitValue = new byte[] { 0 };
                 return false;
             }
+
         }//读取失败
 
 
         //读取一个字节存储单元的数据,长度29
-        public static bool Readbyte(int Address, Enums.StorageType storageType, out int readValue)
+        public static bool Readbyte(int Address, Enums.StorageType storageType, out int readValue, int plcAdd)
         {
             int i, Rece = 0;
             byte fcs;
-            byte[] Receives = new byte[29];
-
             if (!serialPort1.IsOpen)
             {
                 serialPort1.Open();
             }
             Address = Address * 8;
+
+            PPIAddress ppiAddress = new PPIAddress();
+            ppiAddress.DAddress = Convert.ToByte(plcAdd);
+            byte[] Rbyte = ppiAddress.Rbyte;
 
             Rbyte[22] = 0x02;//Byte 22 为读取数据的长度,01： 1 Bit 02： 1 Byte 04： 1 Word 06： Double Word
             Rbyte[24] = 0x01;//一次读取的个数
@@ -280,15 +229,11 @@ namespace testPPI.PPI
             }
             Rbyte[27] = (byte)storageType;
 
-            // buffer[11] = Convert.ToByte(address & 0xff);//地位，如320H，结果为20
-            //buffer[10] = Convert.ToByte((address / 0x100) & 0xff);//0x100 ->256
-            //buffer[9] = Convert.ToByte(address / 0x10000);
+
             Rbyte[28] = Convert.ToByte(Address / 0x10000);
             Rbyte[29] = Convert.ToByte((Address / 0x100) & 0xff);//0x100 ->256;
             Rbyte[30] = Convert.ToByte(Address & 0xff);//低位，如320H，结果为20;
-            //Rbyte[28] = fbyte3;
-            //Rbyte[29] = fbyte2;
-            //Rbyte[30] = fbyte1;
+
             for (i = 4, fcs = 0; i < 31; i++)
             {
                 fcs += Rbyte[i];
@@ -299,49 +244,26 @@ namespace testPPI.PPI
             Rbyte[31] = Convert.ToByte(tt);
             //  Rbyte[31] = fcs;
 
+            byte[] Receives = ReceiveReadByte(serialPort1, Rbyte, ppiAddress);
 
-            serialPort1.DiscardInBuffer();
-            serialPort1.DiscardOutBuffer();
-
-            serialPort1.Write(Rbyte, 0, Rbyte.Length);
-            while (serialPort1.BytesToRead == 0) {; }
-            Rece = serialPort1.ReadByte();
-            if (Rece == 0xE5)
+            if (Receives != null)
             {
-                serialPort1.DiscardInBuffer();
-                serialPort1.DiscardOutBuffer();
-
-                serialPort1.Write(PAddress.Affirm, 0, PAddress.Affirm.Length);
-                Thread.Sleep(100);
-                TimeSpan ts1 = new TimeSpan(DateTime.Now.Ticks);
-                while (serialPort1.BytesToRead < 27)//返回的数据比在串口助手少第一个数据 0x68
-                {
-                    System.Threading.Thread.Sleep(100);
-                    TimeSpan ts2 = new TimeSpan(DateTime.Now.Ticks);
-                    TimeSpan ts = ts2.Subtract(ts1).Duration();
-                    //如果接收时间超出设定时间，则直接退出
-                    if (ts.TotalMilliseconds > 5000)
-                    {
-                        readValue = 0;
-                        return false;
-                    }
-
-                }// 长度为27
-
-                serialPort1.Read(Receives, 0, 28);
-                // serialPort1.Close();
-
+                receiveByte = ByteHelper.ByteToString(Receives);
                 readValue = (int)Receives[25];
+
                 return true;
             }
+
             else
             {
                 readValue = 0;
                 return false;
             }
+
+
         }
 
-        public static bool Readbytes(int Address, Enums.StorageType storageType, out byte[] readValue, int byteCount = 1)
+        public static bool Readbytes(int Address, Enums.StorageType storageType, out byte[] readValue, int plcAdd, int byteCount = 1)
         {
 
             if (byteCount > 200 || byteCount == 0 || byteCount < 0)
@@ -351,7 +273,6 @@ namespace testPPI.PPI
             }
             int i, Rece = 0;
             byte fcs;
-            byte[] Receives = new byte[27 + byteCount];
 
             if (!serialPort1.IsOpen)
             {
@@ -359,6 +280,9 @@ namespace testPPI.PPI
             }
             Address = Address * 8;
 
+            PPIAddress ppiAddress = new PPIAddress();
+            ppiAddress.DAddress = Convert.ToByte(plcAdd);
+            byte[] Rbyte = ppiAddress.Rbyte;
             Rbyte[22] = 0x02;//Byte 22 为读取数据的长度,01： 1 Bit 02： 1 Byte 04： 1 Word 06： Double Word
             Rbyte[24] = Convert.ToByte(byteCount);//一次读取的个数
 
@@ -372,15 +296,11 @@ namespace testPPI.PPI
             }
             Rbyte[27] = (byte)storageType;
 
-            // buffer[11] = Convert.ToByte(address & 0xff);//地位，如320H，结果为20
-            //buffer[10] = Convert.ToByte((address / 0x100) & 0xff);//0x100 ->256
-            //buffer[9] = Convert.ToByte(address / 0x10000);
+
             Rbyte[28] = Convert.ToByte(Address / 0x10000);
             Rbyte[29] = Convert.ToByte((Address / 0x100) & 0xff);//0x100 ->256;
             Rbyte[30] = Convert.ToByte(Address & 0xff);//低位，如320H，结果为20;
-            //Rbyte[28] = fbyte3;
-            //Rbyte[29] = fbyte2;
-            //Rbyte[30] = fbyte1;
+
             for (i = 4, fcs = 0; i < 31; i++)
             {
                 fcs += Rbyte[i];
@@ -390,39 +310,12 @@ namespace testPPI.PPI
 
             Rbyte[31] = Convert.ToByte(tt);
             //  Rbyte[31] = fcs;
-            
 
-            serialPort1.DiscardInBuffer();
-            serialPort1.DiscardOutBuffer();
+            byte[] Receives = ReceiveReadByte(serialPort1, Rbyte, ppiAddress);
 
-            serialPort1.Write(Rbyte, 0, Rbyte.Length);
-            while (serialPort1.BytesToRead == 0) {; }
-            Rece = serialPort1.ReadByte();
-            if (Rece == 0xE5)
+            if (Receives != null)
             {
-                serialPort1.DiscardInBuffer();
-                serialPort1.DiscardOutBuffer();
-
-                serialPort1.Write(PAddress.Affirm, 0, PAddress.Affirm.Length);
-                Thread.Sleep(100);
-                TimeSpan ts1 = new TimeSpan(DateTime.Now.Ticks);
-                while (serialPort1.BytesToRead < 27)//返回的数据比在串口助手少第一个数据 0x68
-                {
-                    System.Threading.Thread.Sleep(100);
-                    TimeSpan ts2 = new TimeSpan(DateTime.Now.Ticks);
-                    TimeSpan ts = ts2.Subtract(ts1).Duration();
-                    //如果接收时间超出设定时间，则直接退出
-                    if (ts.TotalMilliseconds > 5000)
-                    {
-                        readValue = new byte[] { 0 };
-                        return false;
-                    }
-
-                }
-
-                serialPort1.Read(Receives, 0, Receives.Length);
-                receiveByte = Receives;
-                // serialPort1.Close();
+                receiveByte = ByteHelper.ByteToString(Receives);
                 readValue = new byte[byteCount];
                 if (storageType == Enums.StorageType.T)
                 {
@@ -439,32 +332,33 @@ namespace testPPI.PPI
                     }
 
                 }
-
-
                 return true;
             }
+
             else
             {
                 readValue = new byte[] { 0 };
                 return false;
             }
+
         }
 
 
-
-
         //读取一个字存储单元的数据
-        public static bool ReadWord(int Address, Enums.StorageType storageType, out byte[] WordValue)
+        public static bool ReadWord(int Address, Enums.StorageType storageType, out byte[] WordValue, int plcAdd)
         {
             int i, Rece = 0;
             byte fcs;
-            byte[] Receives = new byte[30];
 
             if (!serialPort1.IsOpen)
             {
                 serialPort1.Open();
             }
             Address = Address * 8;
+
+            PPIAddress ppiAddress = new PPIAddress();
+            ppiAddress.DAddress = Convert.ToByte(plcAdd);
+            byte[] Rbyte = ppiAddress.Rbyte;
             Rbyte[22] = 0x04;//Byte 22 为读取数据的长度,01： 1 Bit 02： 1 Byte 04： 1 Word 06： Double Word
             Rbyte[24] = 0x01;//一次读取的个数
 
@@ -491,58 +385,30 @@ namespace testPPI.PPI
             int tt = Convert.ToInt32(fcs) % 256;//添加的代码 mod 256
 
             Rbyte[31] = Convert.ToByte(tt);
+            
+            byte[] Receives = ReceiveReadByte(serialPort1, Rbyte, ppiAddress);
 
-      
-
-            serialPort1.DiscardInBuffer();
-            serialPort1.DiscardOutBuffer();
-
-            serialPort1.Write(Rbyte, 0, Rbyte.Length);
-            Thread.Sleep(200);
-            Rece = serialPort1.ReadByte();
-            if (Rece == 0xE5)
+            if (Receives != null)
             {
-                serialPort1.DiscardInBuffer();
-                serialPort1.DiscardOutBuffer();
-
-                serialPort1.Write(PAddress.Affirm, 0, PAddress.Affirm.Length);
-                //for (i = 0; i < 10000; i++)
-                //    for (int j = 0; j < 1000; j++) ;
-                //  while (serialPort1.BytesToRead < 29) {; }
-                Thread.Sleep(200);
-
-                TimeSpan ts1 = new TimeSpan(DateTime.Now.Ticks);
-                while (serialPort1.BytesToRead < 29)//返回的数据比在串口助手少第一个数据 0x68
-                {
-                    System.Threading.Thread.Sleep(100);
-                    TimeSpan ts2 = new TimeSpan(DateTime.Now.Ticks);
-                    TimeSpan ts = ts2.Subtract(ts1).Duration();
-                    //如果接收时间超出设定时间，则直接退出
-                    if (ts.TotalMilliseconds > 5000)
-                    {
-                        WordValue = new byte[] { 0 };
-                        return false;
-                    }
-
-                }// 长度为30
-
+                receiveByte = ByteHelper.ByteToString(Receives);
                 WordValue = new byte[2];
                 serialPort1.Read(Receives, 0, 30);
                 WordValue[0] = Receives[25];
                 WordValue[1] = Receives[26];
-                receiveByte = Receives;
-                //WordValue = (int)(Receives[25] * 256 + Receives[26]);
+                receiveByte = ByteHelper.ByteToString(Receives);
                 return true;
             }
-            //  serialPort1.Close();
 
-            WordValue = new byte[] { 0 };
-            return false;
+            else
+            {
+                WordValue = new byte[] { 0 };
+                return false;
+            }
         }
 
 
 
-        public static bool ReadWords(int Address, Enums.StorageType storageType, out byte[] WordValue, int WordCount = 1)
+        public static bool ReadWords(int Address, Enums.StorageType storageType, out byte[] WordValue, int plcAdd, int WordCount = 1)
         {
             if (WordCount > 128 || WordCount == 0 || WordCount < 0)
             {
@@ -551,23 +417,17 @@ namespace testPPI.PPI
             }
             int i, Rece = 0;
             byte fcs;
-            byte[] Receives;
-            if (storageType==Enums.StorageType.C)
-            {
-                Receives = new byte[28 + WordCount * 2];
-            }
-            else
-            {
-               Receives = new byte[27 + WordCount * 2];
-            }
-            
+          
             if (!serialPort1.IsOpen)
             {
                 serialPort1.Open();
             }
             Address = Address * 8;
 
-            if (storageType==Enums.StorageType.C)
+            PPIAddress ppiAddress = new PPIAddress();
+            ppiAddress.DAddress = Convert.ToByte(plcAdd);
+            byte[] Rbyte = ppiAddress.Rbyte;
+            if (storageType == Enums.StorageType.C)
             {
                 Rbyte[22] = 0x1e;
             }
@@ -592,9 +452,7 @@ namespace testPPI.PPI
             Rbyte[28] = Convert.ToByte(Address / 0x10000);
             Rbyte[29] = Convert.ToByte((Address / 0x100) & 0xff);//0x100 ->256;
             Rbyte[30] = Convert.ToByte(Address & 0xff);//低位，如320H，结果为20;
-            //Rbyte[28] = fbyte3;
-            //Rbyte[29] = fbyte2;
-            //Rbyte[30] = fbyte1;
+           
             for (i = 4, fcs = 0; i < 31; i++)
             {
                 fcs += Rbyte[i];
@@ -603,68 +461,41 @@ namespace testPPI.PPI
 
             Rbyte[31] = Convert.ToByte(tt);
 
-          
+            byte[] Receives = ReceiveReadByte(serialPort1, Rbyte, ppiAddress);
 
-            serialPort1.DiscardInBuffer();
-            serialPort1.DiscardOutBuffer();
-
-            serialPort1.Write(Rbyte, 0, Rbyte.Length);
-            Thread.Sleep(200);
-            Rece = serialPort1.ReadByte();
-            if (Rece == 0xE5)
+            if (Receives != null)
             {
-                serialPort1.DiscardInBuffer();
-                serialPort1.DiscardOutBuffer();
-
-                serialPort1.Write(PAddress.Affirm, 0, PAddress.Affirm.Length);
-                //for (i = 0; i < 10000; i++)
-                //    for (int j = 0; j < 1000; j++) ;
-                //  while (serialPort1.BytesToRead < 29) {; }
-                Thread.Sleep(200);
-
-                TimeSpan ts1 = new TimeSpan(DateTime.Now.Ticks);
-                while (serialPort1.BytesToRead < 27 + WordCount * 2)//返回的数据比在串口助手少第一个数据 0x68
-                {
-                    System.Threading.Thread.Sleep(100);
-                    TimeSpan ts2 = new TimeSpan(DateTime.Now.Ticks);
-                    TimeSpan ts = ts2.Subtract(ts1).Duration();
-                    //如果接收时间超出设定时间，则直接退出
-                    if (ts.TotalMilliseconds > 5000)
-                    {
-                        WordValue = new byte[] { 0 };
-                        return false;
-                    }
-
-                }// 长度为30
-
+             
                 WordValue = new byte[WordCount * 2];
-                serialPort1.Read(Receives, 0, Receives.Length);
+              
                 for (int j = 0; j < WordValue.Length; j++)
                 {
-                    WordValue[WordValue.Length-1-j] = Receives[Receives.Length-3 -j];
+                    WordValue[WordValue.Length - 1 - j] = Receives[Receives.Length - 3 - j];
                 }
 
-                receiveByte = Receives;
-                //WordValue = (int)(Receives[25] * 256 + Receives[26]);
+                receiveByte = ByteHelper.ByteToString(Receives);
                 return true;
             }
-            // serialPort1.Close();
 
-            WordValue = new byte[] { 0 };
-            return false;
+                WordValue = new byte[] { 0 };
+                return false;
+           
         }
 
 
-        public static bool ReadDWord(int Address, Enums.StorageType storageType, out byte[] WordValue)
+        public static bool ReadDWord(int Address, Enums.StorageType storageType, out byte[] WordValue, int plcAdd)
         {
             int i, Rece = 0;
             byte fcs;
-            byte[] Receives = new byte[31];
-
+         
             if (!serialPort1.IsOpen)
             {
                 serialPort1.Open();
             }
+
+            PPIAddress ppiAddress = new PPIAddress();
+            ppiAddress.DAddress = Convert.ToByte(plcAdd);
+            byte[] Rbyte = ppiAddress.Rbyte;
             Address = Address * 8;
             Rbyte[22] = 0x06;//Byte 22 为读取数据的长度,01： 1 Bit 02： 1 Byte 04： 1  Word 06： Double Word
             Rbyte[24] = 0x01;//一次读取的个数
@@ -682,9 +513,7 @@ namespace testPPI.PPI
             Rbyte[28] = Convert.ToByte(Address / 0x10000);
             Rbyte[29] = Convert.ToByte((Address / 0x100) & 0xff);//0x100 ->256;
             Rbyte[30] = Convert.ToByte(Address & 0xff);//低位，如320H，结果为20;
-            //this.Rbyte[28] = this.fbyte3;
-            //this.Rbyte[29] = this.fbyte2;
-            //this.Rbyte[30] = this.fbyte1;
+        
             for (i = 4, fcs = 0; i < 31; i++)
             {
                 fcs += Rbyte[i];
@@ -692,73 +521,27 @@ namespace testPPI.PPI
             int tt = Convert.ToInt32(fcs) % 256;//添加的代码 mod 256
 
             Rbyte[31] = Convert.ToByte(tt);
+            
+            byte[] Receives = ReceiveReadByte(serialPort1, Rbyte, ppiAddress);
 
-         
-
-            serialPort1.DiscardInBuffer();
-            serialPort1.DiscardOutBuffer();
-
-            serialPort1.Write(Rbyte, 0, Rbyte.Length);
-            Thread.Sleep(200);
-            Rece = serialPort1.ReadByte();
-            if (Rece == 0xE5)
+            if (Receives != null)
             {
-                serialPort1.DiscardInBuffer();
-                serialPort1.DiscardOutBuffer();
-
-                serialPort1.Write(PAddress.Affirm, 0, PAddress.Affirm.Length);
-                //for (i = 0; i < 10000; i++)
-                //    for (int j = 0; j < 1000; j++) ;
-                //  while (this.serialPort1.BytesToRead < 29) {; }
-                Thread.Sleep(200);
-
-                TimeSpan ts1 = new TimeSpan(DateTime.Now.Ticks);
-                while (serialPort1.BytesToRead < 30)//返回的数据比在串口助手少第一个数据 0x68
-                {
-                    System.Threading.Thread.Sleep(100);
-                    TimeSpan ts2 = new TimeSpan(DateTime.Now.Ticks);
-                    TimeSpan ts = ts2.Subtract(ts1).Duration();
-                    //如果接收时间超出设定时间，则直接退出
-                    if (ts.TotalMilliseconds > 5000)
-                    {
-                        WordValue = new byte[] { 0 };
-                        return false;
-                    }
-
-                }// 长度为30
-
-
-                serialPort1.Read(Receives, 0, Receives.Length);
-                receiveByte = Receives;
-                long d1 = Convert.ToInt32(Receives[25]);//用long类型避免出现负数
-                long c1 = d1 * 16777216;
-                long c2 = Receives[26] * 0x10000;
-                long c3 = Receives[27] * 256;
-                long c4 = Receives[28];
-                long c5 = c1 + c2 + c3 + c4;
-
                 WordValue = new byte[4] { Receives[25], Receives[26], Receives[27], Receives[28] };
 
+                receiveByte = ByteHelper.ByteToString(Receives);
                 return true;
             }
-
-
+            
             WordValue = new byte[] { 0 };
             return false;
         }
-
-
-        public static byte[] TReadByte = PAddress.TReadByte;
-            
-        public static bool TReadDword(int Address, out byte[] value)
+        
+        public static bool TReadDword(int Address, out byte[] value, int plcAdd)
         {
-
-
 
             int i, Rece = 0;
             byte fcs;
-            byte[] Receives = new byte[32];
-
+          
             if (!serialPort1.IsOpen)
             {
                 serialPort1.Open();
@@ -768,12 +551,14 @@ namespace testPPI.PPI
             // buffer[11] = Convert.ToByte(address & 0xff);//地位，如320H，结果为20
             //buffer[10] = Convert.ToByte((address / 0x100) & 0xff);//0x100 ->256
             //buffer[9] = Convert.ToByte(address / 0x10000);
+
+            PPIAddress ppiAddress = new PPIAddress();
+            ppiAddress.DAddress = Convert.ToByte(plcAdd);
+            byte[] TReadByte = ppiAddress.TReadByte;
             TReadByte[28] = Convert.ToByte(Address / 0x10000);
             TReadByte[29] = Convert.ToByte((Address / 0x100) & 0xff);//0x100 ->256;
             TReadByte[30] = Convert.ToByte(Address & 0xff);//低位，如320H，结果为20;
-            //Rbyte[28] = fbyte3;
-            //Rbyte[29] = fbyte2;
-            //Rbyte[30] = fbyte1;
+           
             for (i = 4, fcs = 0; i < 31; i++)
             {
                 fcs += TReadByte[i];
@@ -784,58 +569,78 @@ namespace testPPI.PPI
             TReadByte[31] = Convert.ToByte(tt);
             //  Rbyte[31] = fcs;
 
-        
+            byte[] Receives = ReceiveReadByte(serialPort1, TReadByte, ppiAddress);
 
-            serialPort1.DiscardInBuffer();
-            serialPort1.DiscardOutBuffer();
-
-            serialPort1.Write(TReadByte, 0, TReadByte.Length);
-            while (serialPort1.BytesToRead == 0) {; }
-            Rece = serialPort1.ReadByte();
-            if (Rece == 0xE5)
+            if (Receives != null)
             {
-                serialPort1.DiscardInBuffer();
-                serialPort1.DiscardOutBuffer();
-
-                serialPort1.Write(PAddress.Affirm, 0, PAddress.Affirm.Length);
-                Thread.Sleep(100);
-                TimeSpan ts1 = new TimeSpan(DateTime.Now.Ticks);
-                while (serialPort1.BytesToRead < 24)
-                {
-                    System.Threading.Thread.Sleep(100);
-                    TimeSpan ts2 = new TimeSpan(DateTime.Now.Ticks);
-                    TimeSpan ts = ts2.Subtract(ts1).Duration();
-                    //如果接收时间超出设定时间，则直接退出
-                    if (ts.TotalMilliseconds > 5000)
-                    {
-                        value = new byte[] { 0 };
-                        return false;
-                    }
-
-                }
-
-                serialPort1.Read(Receives, 0, Receives.Length);
-                receiveByte = Receives;
-                // serialPort1.Close();
                 value = new byte[4];
                 for (int j = 0; j < 4; j++)
                 {
                     value[j] = Receives[26 + j];
                 }
 
+                receiveByte = ByteHelper.ByteToString(Receives);
                 return true;
             }
-            else
+
+         
+            value = new byte[] { 0 };
+            return false;
+
+        }
+
+
+        public static byte[] ReceiveReadByte(SerialPort sPort, byte[] sendData, PPIAddress ppiAddress)
+        {
+            byte[] Receives = new byte[100];
+            sPort.DiscardInBuffer();
+            sPort.DiscardOutBuffer();
+            sPort.Write(sendData, 0, sendData.Length);
+
+            while (sPort.BytesToRead == 0)
             {
-                value = new byte[] { 0 };
-                return false;
+                Stopwatch sw = new Stopwatch();
+                sw.Start();
+                if (sw.Elapsed > TimeSpan.FromSeconds(1))
+                {
+                    break;
+                }
+
+            }
+            int Rece;
+            if (sPort.BytesToRead > 0)
+            {
+                if (0xe5 == sPort.ReadByte())
+                {
+                    sPort.DiscardInBuffer();
+                    sPort.DiscardOutBuffer();
+
+                    sPort.Write(ppiAddress.Affirm, 0, ppiAddress.Affirm.Length);
+                }
+                sPort.Read(Receives, 0, Receives.Length);
+
+
+                int ReceiveDataCount = 0;
+                for (int i = Receives.Length - 1; i >= 0; i--)
+                {
+                    if (Receives[i] != 0)
+                    {
+                        ReceiveDataCount = i;
+                        break;
+                    }
+                }
+                byte[] ReceivesResult = new byte[ReceiveDataCount + 1];
+                Array.Copy(Receives, 0, ReceivesResult, 0, ReceiveDataCount + 1);
+
+                return ReceivesResult;
+
             }
 
+            return null;
 
 
         }
 
-       
 
         #endregion
 
@@ -848,23 +653,7 @@ namespace testPPI.PPI
         //从 22 字节开始根据写入数据的值和位置不同而变化
 
 
-        #region 预定义写字符串
-
-        public static byte[] Wbit = PAddress.Wbit;
-
-
-        public static byte[] Wbyte = PAddress.Wbyte;
-
-
-        public static byte[] Wword = PAddress.Wword;
-        public static byte[] WDword = PAddress.WDword;
-
-        #endregion
-
-
-
-
-        public static bool WriteBit(int ByteAddress, byte bitnumber, Enums.StorageType storageType, int WriteValue)
+        public static bool WriteBit(int ByteAddress, byte bitnumber, Enums.StorageType storageType, int WriteValue, int plcAdd)
         {
             if (WriteValue > 255)
             {
@@ -874,26 +663,17 @@ namespace testPPI.PPI
             int i, Rece = 0;
             byte fcs;
 
-            //位写操作返回都是字符串为：68 12 12 68 00 02 08 32 03 00 00 00 00 00 02 00 01 00 00 05 01 FF 47 16
-            byte[] ReceivesCheck = { 0x68, 0x12, 0x12, 0x68, 0x00, 0x02, 0x08, 0x32, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x01, 0x00, 0x00, 0x05, 0x01, 0xFF, 0x47, 0x16 };
-
+        
             if (!serialPort1.IsOpen)
             {
                 serialPort1.Open();
             }
 
-            //if (storageType == Enums.StorageType.SM)
-            //{
-            //    ByteAddress =10000+ ByteAddress * 8 + bitnumber;
-            //}
-            //else
-            //{
-            //    ByteAddress = ByteAddress * 8 + bitnumber;
-            //}
-
-
-
             ByteAddress = ByteAddress * 8 + bitnumber;
+
+            PPIAddress ppiAddress = new PPIAddress();
+            ppiAddress.DAddress = Convert.ToByte(plcAdd);
+            byte[] Wbit = ppiAddress.Wbit;
             Wbit[22] = 0x01;//Byte 22 为读取数据的长度,01： 1 Bit 02： 1 Byte 04： 1 Word 06： Double Word
 
             if (storageType == Enums.StorageType.T)
@@ -904,8 +684,6 @@ namespace testPPI.PPI
             {
                 Wbit[22] = 0x1E;
             }
-
-
 
             Wbit[24] = 0x01;// Byte 24 为数据个数：这里是 01，一次读一个数据
 
@@ -942,25 +720,13 @@ namespace testPPI.PPI
 
             Wbit[36] = Convert.ToByte(tt);
             
-
-            serialPort1.DiscardInBuffer();
-            serialPort1.DiscardOutBuffer();
-
-            serialPort1.Write(Wbit, 0, Wbit.Length);
-            //while (serialPort1.BytesToRead == 0) {; }
-            string str = ByteToString(Wbit);
-
-
-            Thread.Sleep(100);
-
-            Rece = serialPort1.ReadByte();
-            return IsWriteSuccess(Rece, serialPort1);
+            return IsWriteSuccess(Wbit, serialPort1, ppiAddress);
 
         }
 
 
 
-        public static bool Writebyte(int ByteAddress, Enums.StorageType storageType, int WriteValue)
+        public static bool Writebyte(int ByteAddress, Enums.StorageType storageType, int WriteValue, int plcAdd)
         {
 
             if (WriteValue > 255)
@@ -970,12 +736,17 @@ namespace testPPI.PPI
             int i, Rece = 0;
             byte fcs;
 
-           
+
 
             if (!serialPort1.IsOpen)
             {
                 serialPort1.Open();
             }
+
+            PPIAddress ppiAddress = new PPIAddress();
+            ppiAddress.DAddress = Convert.ToByte(plcAdd);
+            byte[] Wbyte = ppiAddress.Wbyte;
+
 
             ByteAddress = ByteAddress * 8;
             Wbyte[22] = 0x02;//Byte 22 为读取数据的长度,01： 1 Bit 02： 1 Byte 04： 1 Word 06： Double Word
@@ -1017,24 +788,13 @@ namespace testPPI.PPI
 
             Wbyte[36] = Convert.ToByte(tt);
 
-  
-
-            serialPort1.DiscardInBuffer();
-            serialPort1.DiscardOutBuffer();
-
-            serialPort1.Write(Wbyte, 0, Wbyte.Length);
-            //while (serialPort1.BytesToRead == 0) {; }
-
-            Thread.Sleep(100);
-
-            Rece = serialPort1.ReadByte();
-            return IsWriteSuccess(Rece, serialPort1);
+            return IsWriteSuccess(Wbyte, serialPort1, ppiAddress);
 
         }
 
 
 
-        public static bool WriteWord(int byteAddress, Enums.StorageType storageType, int writeValue)
+        public static bool WriteWord(int byteAddress, Enums.StorageType storageType, int writeValue, int plcAdd)
         {
 
             //if (WriteValue > 255)
@@ -1044,7 +804,7 @@ namespace testPPI.PPI
             int i, Rece = 0;
             byte fcs;
 
-        
+
 
             if (!serialPort1.IsOpen)
             {
@@ -1052,6 +812,12 @@ namespace testPPI.PPI
             }
 
             byteAddress = byteAddress * 8;
+
+            PPIAddress ppiAddress = new PPIAddress();
+
+            ppiAddress.DAddress = Convert.ToByte(plcAdd);
+            byte[] Wword = ppiAddress.Wword;
+
             Wword[22] = 0x04;//Byte 22 为读取数据的长度,01： 1 Bit 02： 1 Byte 04： 1 =Word06： Double Word
             Wword[24] = 0x01;// Byte 24 为数据个数：这里是 01，一次读一个数据
 
@@ -1091,21 +857,7 @@ namespace testPPI.PPI
 
             Wword[37] = Convert.ToByte(tt);
 
-
-
-            serialPort1.DiscardInBuffer();
-            serialPort1.DiscardOutBuffer();
-
-            serialPort1.Write(Wword, 0, Wword.Length);
-            //while (this.serialPort1.BytesToRead == 0) {; }
-
-            Thread.Sleep(100);
-
-            string str = ByteToString(Wword);
-
-            Rece = serialPort1.ReadByte();
-
-            return IsWriteSuccess(Rece, serialPort1);
+            return IsWriteSuccess(Wword, serialPort1, ppiAddress);
 
         }
 
@@ -1127,7 +879,7 @@ namespace testPPI.PPI
 
         }
 
-        public static bool WriteDWord(int byteAddress, Enums.StorageType storageType, long writeValue)
+        public static bool WriteDWord(int byteAddress, Enums.StorageType storageType, long writeValue, int plcAdd)
         {
 
             if (writeValue > uint.MaxValue)
@@ -1137,12 +889,14 @@ namespace testPPI.PPI
             int i, Rece = 0;
             byte fcs;
 
-      
+
             if (!serialPort1.IsOpen)
             {
                 serialPort1.Open();
             }
-
+            PPIAddress ppiAddress = new PPIAddress();
+            ppiAddress.DAddress = Convert.ToByte(plcAdd);
+            byte[] WDword = ppiAddress.WDword;
 
             byteAddress = byteAddress * 8;
             WDword[22] = 0x06;//Byte 22 为读取数据的长度,01： 1 Bit 02： 1 Byte 04： 1 Word 06： Double Word
@@ -1192,28 +946,16 @@ namespace testPPI.PPI
 
             WDword[WDword.Length - 2] = Convert.ToByte(tt);
 
-        
-            serialPort1.DiscardInBuffer();
-            serialPort1.DiscardOutBuffer();
 
-            serialPort1.Write(WDword, 0, WDword.Length);
-            string str = ByteToString(WDword);
-            //while (this.serialPort1.BytesToRead == 0) {; }
-
-            Thread.Sleep(100);
-
-            Rece = serialPort1.ReadByte();
-            return IsWriteSuccess(Rece, serialPort1);
+            return IsWriteSuccess(WDword, serialPort1, ppiAddress);
 
         }
 
-        public static byte[] TWritebyte = PAddress.TWritebyte;
 
 
-        public static bool TwriteDWord(int byteAddress, long writeValue)
+
+        public static bool TwriteDWord(int byteAddress, long writeValue, int plcAdd)
         {
-
-
             if (writeValue > uint.MaxValue)
             {
                 return false;
@@ -1229,14 +971,11 @@ namespace testPPI.PPI
 
 
             byteAddress = byteAddress * 8;
+            
+            PPIAddress ppiAddress = new PPIAddress();
+            ppiAddress.DAddress = Convert.ToByte(plcAdd);
+            byte[] TWritebyte = ppiAddress.TWritebyte;
 
-            //偏移量,byte 28,29,30 存储器偏移量指针 （存储器地址 *8 ）：
-            //  如 VB100，存储器地址为 100，偏移量指针为 800，转换成 16 
-            //进制就是 320H，则 Byte 28~29 这三个字节就是： 00 03 20
-
-            // buffer[11] = Convert.ToByte(address & 0xff);//地位，如320H，结果为20
-            //buffer[10] = Convert.ToByte((address / 0x100) & 0xff);//0x100 ->256
-            //buffer[9] = Convert.ToByte(address / 0x10000);
             TWritebyte[28] = Convert.ToByte(byteAddress / 0x10000);
             TWritebyte[29] = Convert.ToByte((byteAddress / 0x100) & 0xff);//0x100 ->256;
             TWritebyte[30] = Convert.ToByte(byteAddress & 0xff);//低位，如320H，结果为20;
@@ -1255,27 +994,16 @@ namespace testPPI.PPI
 
             TWritebyte[TWritebyte.Length - 2] = Convert.ToByte(tt);
 
-       
-
-            serialPort1.DiscardInBuffer();
-            serialPort1.DiscardOutBuffer();
-
-            serialPort1.Write(TWritebyte, 0, TWritebyte.Length);
-
-            //while (this.serialPort1.BytesToRead == 0) {; }
-
-            Thread.Sleep(100);
-
-            Rece = serialPort1.ReadByte();
-            return IsWriteSuccess(Rece, serialPort1);
+          
+            return IsWriteSuccess(TWritebyte, serialPort1, ppiAddress);
 
         }
 
-        public static byte[] CwriteWordByte = PAddress.CwriteWordByte;
-                
-        public static bool CWriteWord(int byteAddress, int writeValue)
+
+
+        public static bool CWriteWord(int byteAddress, int writeValue, int plcAdd)
         {
-            
+
             if (writeValue > 65536)
             {
                 return false;
@@ -1288,7 +1016,6 @@ namespace testPPI.PPI
                 serialPort1.Open();
             }
 
-
             byteAddress = byteAddress * 8;
 
             //偏移量,byte 28,29,30 存储器偏移量指针 （存储器地址 *8 ）：
@@ -1298,6 +1025,10 @@ namespace testPPI.PPI
             // buffer[11] = Convert.ToByte(address & 0xff);//地位，如320H，结果为20
             //buffer[10] = Convert.ToByte((address / 0x100) & 0xff);//0x100 ->256
             //buffer[9] = Convert.ToByte(address / 0x10000);
+
+            PPIAddress ppiAddress = new PPIAddress();
+            ppiAddress.DAddress = Convert.ToByte(plcAdd);
+            byte[] CwriteWordByte = ppiAddress.CwriteWordByte;
             CwriteWordByte[28] = Convert.ToByte(byteAddress / 0x10000);
             CwriteWordByte[29] = Convert.ToByte((byteAddress / 0x100) & 0xff);//0x100 ->256;
             CwriteWordByte[30] = Convert.ToByte(byteAddress & 0xff);//低位，如320H，结果为20;
@@ -1314,21 +1045,9 @@ namespace testPPI.PPI
             int tt = Convert.ToInt32(fcs) % 256;//添加的代码 mod 256
 
             CwriteWordByte[CwriteWordByte.Length - 2] = Convert.ToByte(tt);
-
-        
-
-            serialPort1.DiscardInBuffer();
-            serialPort1.DiscardOutBuffer();
-
-            serialPort1.Write(CwriteWordByte, 0, CwriteWordByte.Length);
-
-            //while (this.serialPort1.BytesToRead == 0) {; }
-
-            Thread.Sleep(100);
-
-            Rece = serialPort1.ReadByte();
-          return  IsWriteSuccess(Rece, serialPort1);
             
+            return IsWriteSuccess(CwriteWordByte, serialPort1, ppiAddress);
+
         }
 
 
@@ -1423,26 +1142,36 @@ namespace testPPI.PPI
         }
 
 
-        public static bool IsWriteSuccess(int e5,SerialPort port)
+        public static bool IsWriteSuccess(byte [] SendData, SerialPort port, PPIAddress ppiAddress)
         {
 
-            if (e5 == 0xE5)
+            serialPort1.DiscardInBuffer();
+            serialPort1.DiscardOutBuffer();
+
+            serialPort1.Write(SendData, 0, SendData.Length);
+
+
+            Thread.Sleep(100);
+
+          int  Rece = serialPort1.ReadByte();
+            
+            if (Rece == 0xE5)
             {
                 port.DiscardInBuffer();
                 port.DiscardOutBuffer();
 
-                port.Write(PAddress.Affirm, 0, PAddress.Affirm.Length);
+                port.Write(ppiAddress.Affirm, 0, ppiAddress.Affirm.Length);
                 TimeSpan ts1 = new TimeSpan(DateTime.Now.Ticks);
 
-                PortTimeout(PAddress.WriteReceivesCheck.Length, ts1, port);
+                PortTimeout(ppiAddress.WriteReceivesCheck.Length, ts1, port);
 
-                byte[] Receives = new byte[PAddress.WriteReceivesCheck.Length];
+                byte[] Receives = new byte[ppiAddress.WriteReceivesCheck.Length];
                 port.Read(Receives, 0, Receives.Length);
-                receiveByte = Receives;
+                receiveByte = ByteToString(Receives);
                 int n = 0;
                 for (int j = 0; j < 24; j++)
                 {
-                    if (Receives[j] != PAddress.WriteReceivesCheck[j])
+                    if (Receives[j] != ppiAddress.WriteReceivesCheck[j])
                     {
                         n++;
                         break;
@@ -1464,7 +1193,7 @@ namespace testPPI.PPI
 
                 return false;
             }
-            
+
         }
 
 

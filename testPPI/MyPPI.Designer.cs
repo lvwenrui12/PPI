@@ -456,9 +456,9 @@
             this.label8.AutoSize = true;
             this.label8.Location = new System.Drawing.Point(191, 126);
             this.label8.Name = "label8";
-            this.label8.Size = new System.Drawing.Size(101, 12);
+            this.label8.Size = new System.Drawing.Size(89, 12);
             this.label8.TabIndex = 33;
-            this.label8.Text = "PLC地址 十六进制";
+            this.label8.Text = "PLC地址 十进制";
             // 
             // txtPLC
             // 

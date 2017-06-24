@@ -116,7 +116,7 @@ namespace testPPI
 
         private void btnRead_Click(object sender, EventArgs e)
         {
-            PPIHelper.PAddress.DAddress = Convert.ToByte(txtPLC.Text);
+         
 
             if (!PPIHelper.serialPort1.IsOpen)
             {
@@ -130,11 +130,11 @@ namespace testPPI
             if ((Enums.StorageType) Enum.Parse(typeof(Enums.StorageType), comStore.Text) == Enums.StorageType.T)
             {
 
-                if (PPIHelper.TReadDword(Int32.Parse(txtAddress.Text),out readValues ))
+                if (PPIHelper.TReadDword(Int32.Parse(txtAddress.Text),out readValues ,Int32.Parse(txtPLC.Text)))
                 {
                     flag = true;
                 }
-                txtSendCmd.Text = ByteToString(PPIHelper.TReadByte);
+                txtSendCmd.Text = (PPIHelper);
 
             }
             else
@@ -149,7 +149,7 @@ namespace testPPI
                         if (PPIHelper.Readbit(Int32.Parse(txtAddress.Text), Int32.Parse(txtBit.Text),
 
                             (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                            out readValues))
+                            out readValues,int.Parse(txtPLC.Text))
                         {
                             flag = true;
 

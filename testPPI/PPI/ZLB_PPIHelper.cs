@@ -372,6 +372,57 @@ namespace testPPI.PPI
         #endregion
 
 
+        #region TReadWord
+
+        public static bool TReadDword(Socket tcpClient,int Address, out byte[] value,int ComNum)
+        {
+            int i, Rece = 0;
+            byte fcs;
+        
+            PPIAddress ppiAddress = new PPIAddress();
+            byte[] TReadByte = ppiAddress.TReadByte;
+            
+            Address = Address * 8;
+            TReadByte[28] = Convert.ToByte(Address / 0x10000);
+            TReadByte[29] = Convert.ToByte((Address / 0x100) & 0xff);//0x100 ->256;
+            TReadByte[30] = Convert.ToByte(Address & 0xff);//低位，如320H，结果为20;
+        
+            for (i = 4, fcs = 0; i < 31; i++)
+            {
+                fcs += TReadByte[i];
+            }
+
+            int tt = Convert.ToInt32(fcs) % 256;//添加的代码 mod 256
+
+            TReadByte[31] = Convert.ToByte(tt);
+          
+            TReadByte = ByteHelper.MergerArray(new byte[] { Convert.ToByte(ComNum) }, TReadByte);
+
+            bool flag = false;
+
+            byte[] Receives = ReceiveReadByte(tcpClient, TReadByte, ppiAddress, ComNum);
+
+            if (Receives != null)
+            {
+                flag = true;
+
+                value = new byte[4];
+                for (int j = 0; j < 4; j++)
+                {
+                    value[j] = Receives[32 + j];
+                }
+               
+                receiveByte = ByteHelper.ByteToString(Receives);
+                return flag;
+            }
+
+            value = new byte[] { 0 };
+            return flag;
+            
+        }
+
+        #endregion
+
 
         public static byte[] ReceiveReadByte(Socket tcpClient,byte [] Rbyte,PPIAddress ppiAddress,int ComNum)
         {
@@ -816,6 +867,113 @@ namespace testPPI.PPI
 
 
         #endregion
+
+        #region CWriteWord
+
+        public static bool CWriteWord(Socket tcpClient, int byteAddress, int writeValue, int ComNum)
+        {
+
+            if (writeValue > 65536)
+            {
+                return false;
+            }//最大写入值0xfffff,4,294,967,295
+            int i, Rece = 0;
+            byte fcs;
+
+            PPIAddress ppiAddress = new PPIAddress();
+
+            byte[] CwriteWordByte = ppiAddress.CwriteWordByte;
+
+
+            byteAddress = byteAddress * 8;
+
+            //偏移量,byte 28,29,30 存储器偏移量指针 （存储器地址 *8 ）：
+            //  如 VB100，存储器地址为 100，偏移量指针为 800，转换成 16 
+            //进制就是 320H，则 Byte 28~29 这三个字节就是： 00 03 20
+
+            // buffer[11] = Convert.ToByte(address & 0xff);//地位，如320H，结果为20
+            //buffer[10] = Convert.ToByte((address / 0x100) & 0xff);//0x100 ->256
+            //buffer[9] = Convert.ToByte(address / 0x10000);
+            CwriteWordByte[28] = Convert.ToByte(byteAddress / 0x10000);
+            CwriteWordByte[29] = Convert.ToByte((byteAddress / 0x100) & 0xff);//0x100 ->256;
+            CwriteWordByte[30] = Convert.ToByte(byteAddress & 0xff);//低位，如320H，结果为20;
+
+            CwriteWordByte[35] = Convert.ToByte((writeValue / 0x10000) & 0xff);
+            CwriteWordByte[36] = Convert.ToByte((writeValue / 0x100) & 0xff);
+            CwriteWordByte[37] = Convert.ToByte(writeValue % 256);
+
+            for (i = 4, fcs = 0; i < CwriteWordByte.Length - 2; i++)
+            {
+                fcs += CwriteWordByte[i];
+            }
+
+            int tt = Convert.ToInt32(fcs) % 256;//添加的代码 mod 256
+
+            CwriteWordByte[CwriteWordByte.Length - 2] = Convert.ToByte(tt);
+
+
+            byte[] SendData = ByteHelper.MergerArray(new byte[] { Convert.ToByte(ComNum) }, CwriteWordByte);
+
+            return WriteData(tcpClient, SendData, ppiAddress, ComNum);
+
+
+        }
+
+        #endregion
+
+
+        public static bool TwriteDWord(Socket tcpClient,int byteAddress, long writeValue,int ComNum)
+        {
+
+
+            if (writeValue > uint.MaxValue)
+            {
+                return false;
+            }//最大写入值0xffffffff,4,294,967,295
+            int i, Rece = 0;
+            byte fcs;
+
+            PPIAddress ppiAddress = new PPIAddress();
+
+            byte[] TWritebyte = ppiAddress.TWritebyte;
+
+
+            byteAddress = byteAddress * 8;
+
+            //偏移量,byte 28,29,30 存储器偏移量指针 （存储器地址 *8 ）：
+            //  如 VB100，存储器地址为 100，偏移量指针为 800，转换成 16 
+            //进制就是 320H，则 Byte 28~29 这三个字节就是： 00 03 20
+
+            // buffer[11] = Convert.ToByte(address & 0xff);//地位，如320H，结果为20
+            //buffer[10] = Convert.ToByte((address / 0x100) & 0xff);//0x100 ->256
+            //buffer[9] = Convert.ToByte(address / 0x10000);
+            TWritebyte[28] = Convert.ToByte(byteAddress / 0x10000);
+            TWritebyte[29] = Convert.ToByte((byteAddress / 0x100) & 0xff);//0x100 ->256;
+            TWritebyte[30] = Convert.ToByte(byteAddress & 0xff);//低位，如320H，结果为20;
+
+            TWritebyte[36] = Convert.ToByte(writeValue / 0x1000000);
+            TWritebyte[37] = Convert.ToByte((writeValue / 0x10000) & 0xff);
+            TWritebyte[38] = Convert.ToByte((writeValue / 0x100) & 0xff);
+            TWritebyte[39] = Convert.ToByte(writeValue % 256);
+
+            for (i = 4, fcs = 0; i < TWritebyte.Length - 2; i++)
+            {
+                fcs += TWritebyte[i];
+            }
+
+            int tt = Convert.ToInt32(fcs) % 256;//添加的代码 mod 256
+
+            TWritebyte[TWritebyte.Length - 2] = Convert.ToByte(tt);
+
+
+            byte[] SendData = ByteHelper.MergerArray(new byte[] { Convert.ToByte(ComNum) }, TWritebyte);
+
+            return WriteData(tcpClient, SendData, ppiAddress, ComNum);
+
+          
+
+        }
+
 
 
 
