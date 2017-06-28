@@ -594,6 +594,7 @@ namespace testPPI.PPI
             sPort.DiscardOutBuffer();
             sPort.Write(sendData, 0, sendData.Length);
 
+            sendCmd = ByteHelper.ByteToString(sendData);
             while (sPort.BytesToRead == 0)
             {
                 Stopwatch sw = new Stopwatch();
@@ -602,6 +603,7 @@ namespace testPPI.PPI
                 {
                     break;
                 }
+                sw.Stop();
 
             }
            
@@ -629,6 +631,7 @@ namespace testPPI.PPI
                 byte[] ReceivesResult = new byte[ReceiveDataCount + 1];
                 Array.Copy(Receives, 0, ReceivesResult, 0, ReceiveDataCount + 1);
 
+                receiveByte = ByteHelper.ByteToString(ReceivesResult);
                 return ReceivesResult;
 
             }
@@ -1126,7 +1129,7 @@ namespace testPPI.PPI
 
             serialPort1.Write(SendData, 0, SendData.Length);
 
-
+            sendCmd = ByteHelper.ByteToString(SendData);
             Thread.Sleep(100);
 
             int Rece = serialPort1.ReadByte();
