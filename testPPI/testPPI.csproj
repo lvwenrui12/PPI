@@ -83,6 +83,7 @@
     <Compile Include="PPI\MeiColoudAddress.cs" />
     <Compile Include="PPI\PPIAddress.cs" />
     <Compile Include="PPI\PPIHelper.cs" />
+    <Compile Include="PPI\PPIReadWritePara.cs" />
     <Compile Include="PPI\StateObject.cs" />
     <Compile Include="PPI\ZLB_PPIHelper2.cs" />
     <Compile Include="ZLB.cs">

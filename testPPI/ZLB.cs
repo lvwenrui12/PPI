@@ -136,124 +136,72 @@ namespace testPPI
 
         private void btnRead_Click(object sender, EventArgs e)
         {
-            PPIHelper.PAddress.DAddress = Convert.ToByte(txtPLC.Text);
-
-
-            bool flag = false;
-
-            byte[] readValues = new byte[] { };
-
+            
+            PPIReadWritePara readResult = new PPIReadWritePara();
+            ZLB_PPIHelper zlbPPI = new ZLB_PPIHelper();
 
             if (client.Connected)
             {
-                if ((Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text) == Enums.StorageType.T)
-                {
+                PPIReadWritePara para = new PPIReadWritePara();
+                para.StorageType = (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text);
+                para.TcpClient = client;
+                para.ByteAddress = Int32.Parse(txtAddress.Text);
+                para.Bitnumber = int.Parse(txtBit.Text);
+                para.PlcAddress = int.Parse(txtPLC.Text);
+                para.ComNum = int.Parse(txtComNum.Text);
 
-                    if (ZLB_PPIHelper.TReadDword(client,Int32.Parse(txtAddress.Text), out readValues,int.Parse(txtComNum.Text)))
-                    {
-                        flag = true;
-                    }
-                    txtSendCmd.Text = (ZLB_PPIHelper.sendCmd);
+                para.ReadCount = int.Parse(txtReadCount.Text) > 0 ? int.Parse(txtReadCount.Text) : 1;
+                para.WriteValue = int.Parse(txtWriteValue.Text);
+             if (para.StorageType == Enums.StorageType.T)
+                {
+                     readResult = zlbPPI.TReadDword(para);
+                    
+                    txtSendCmd.Text = ZLB_PPIHelper.sendCmd;
 
                 }
                 else
                 {
+
                     #region switch
                     switch (comRead.Text)
                     {
                         case "Bit":
-                            if (ZLB_PPIHelper.Readbit(client, int.Parse(txtComNum.Text), Int32.Parse(txtAddress.Text), Int32.Parse(txtBit.Text),
 
-                                (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                                out readValues, int.Parse(txtPLC.Text)))
-                            {
-                                flag = true;
-
-                            }
+                            readResult = zlbPPI.Readbit(para);
+                        
                             txtSendCmd.Text = ZLB_PPIHelper.sendCmd;
-
                             break;
                         case "Byte":
-                            if (txtReadCount.Text.Length == 0)
-                            {
-                                if (
-                                 ZLB_PPIHelper.Readbytes(client, Int32.Parse(txtAddress.Text),
-
-                                (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                                out readValues, int.Parse(txtComNum.Text)))
-                                {
-                                    flag = true;
-                                }
-                            }
-                            else
-                            {
-                                if (ZLB_PPIHelper.Readbytes(client,Int32.Parse(txtAddress.Text),
-
-                               (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                             out readValues,int.Parse(txtComNum.Text), Int32.Parse(txtReadCount.Text)))
-                                {
-                                    flag = true;
-                                }
-                               
-                            }
+                            readResult = zlbPPI.Readbytes(para);
                             txtSendCmd.Text = (ZLB_PPIHelper.sendCmd);
                             break;
-
-
                         case "Word":
-                            if (txtReadCount.Text.Length == 0)
-                            {
-                                if (ZLB_PPIHelper.ReadWords(client,Int32.Parse(txtAddress.Text),
-
-                               (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                              out readValues,int.Parse(txtComNum.Text)))
-                                {
-                                    flag = true;
-                                }
-                                ;
-                            }
-                            else
-                            {
-                                if (ZLB_PPIHelper.ReadWords(client,Int32.Parse(txtAddress.Text),
-
-                              (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                              out readValues, int.Parse(txtComNum.Text),Int32.Parse(txtReadCount.Text)))
-                                {
-                                    flag = true;
-                                }
-
-                            }
+                            readResult = zlbPPI.ReadWords(para);
+                            txtSendCmd.Text = (ZLB_PPIHelper.sendCmd);
+                      
                             txtSendCmd.Text = ZLB_PPIHelper.sendCmd;
                             break;
 
                         case "DWord":
 
-                            if (ZLB_PPIHelper.ReadDoubleWord(client,Int32.Parse(txtAddress.Text),
-
-                           (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                           out readValues,int.Parse(txtComNum.Text)))
-                            {
-                                flag = true;
-                            }
+                            readResult = zlbPPI.ReadDoubleWord(para);
                             txtSendCmd.Text = (ZLB_PPIHelper.sendCmd);
-
-
-
+                         
+                            txtSendCmd.Text = ZLB_PPIHelper.sendCmd;
                             break;
-
                         default:
 
                             break;
 
-
                     }
                     #endregion
+
                 }
             }
-            if (flag)
+            if (readResult.IsSuceess)
             {
                 txtReceive.Text = ZLB_PPIHelper.receiveByte;
-                txtValue.Text =ByteHelper.ByteToString(readValues);
+                txtValue.Text = ByteHelper.ByteToString(readResult.ReadValue);
             }
             else
             {
@@ -263,19 +211,24 @@ namespace testPPI
 
         }
 
-     
+
 
         private void btnWrite_Click(object sender, EventArgs e)
         {
-            
+
             int wValue = 0;
+
             bool flag = false;
+        ZLB_PPIHelper zlbPPI = new ZLB_PPIHelper();
             if (txtWriteValue.Text.Length == 0)
             {
                 MessageBox.Show("请输数值");
             }
             else
             {
+                
+
+
                 if ((Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text) == Enums.StorageType.C || (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text) == Enums.StorageType.T)
                 {
                     MessageBox.Show("T，C寄存器等不能用写命令写入");
@@ -284,19 +237,37 @@ namespace testPPI
 
                 if (client.Connected)
                 {
+                    PPIReadWritePara para = new PPIReadWritePara();
+                    para.StorageType = (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text);
+                    para.TcpClient = client;
+                    para.ByteAddress = Int32.Parse(txtAddress.Text);
+                    para.Bitnumber = int.Parse(txtBit.Text);
+                    para.PlcAddress = int.Parse(txtPLC.Text);
+                    para.ComNum = int.Parse(txtComNum.Text);
+
+                    para.ReadCount = int.Parse(txtReadCount.Text) > 0 ? int.Parse(txtReadCount.Text) : 1;
+                    para.WriteValue = int.Parse(txtWriteValue.Text);
+
+
+
+
                     if (int.TryParse(txtWriteValue.Text, out wValue))
                     {
                         if ((Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text) == Enums.StorageType.T)
                         {
-                            if (ZLB_PPIHelper.TwriteDWord(client,Int32.Parse(txtAddress.Text), wValue,int.Parse(txtComNum.Text)))
+
+                            if (zlbPPI.TwriteDWord(para))
                             {
-                                flag = true;
                                 txtSendCmd.Text = (ZLB_PPIHelper.sendCmd);
+                                flag = true;
                             }
+                           
+                          
+                            
                         }
                         else if ((Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text) == Enums.StorageType.C)
                         {
-                            if (ZLB_PPIHelper.CWriteWord(client,Int32.Parse(txtAddress.Text), wValue,int.Parse(txtComNum.Text)))
+                            if (zlbPPI.CWriteWord(para))
                             {
                                 flag = true;
                                 txtSendCmd.Text = (ZLB_PPIHelper.sendCmd);
@@ -308,50 +279,33 @@ namespace testPPI
                             switch (comWrite.Text)
                             {
                                 case "Bit":
-
-                                    if (ZLB_PPIHelper.WriteBit(client, int.Parse(txtComNum.Text), Int32.Parse(txtAddress.Text), Convert.ToByte(txtBit.Text),
-
-                                        (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                                        wValue, int.Parse(txtPLC.Text)))
-                                    {
+                                    
+                                    if (ppiHelper.WriteBit(para))
+                                        {
                                         flag = true;
 
                                         txtSendCmd.Text = (ZLB_PPIHelper.sendCmd);
                                     }
-
-
                                     break;
                                 case "Byte":
 
-                                    if (ZLB_PPIHelper.Writebyte(client,Int32.Parse(txtAddress.Text),
-
-                                       (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                                    wValue,int.Parse(txtComNum.Text)))
+                                    if (ppiHelper.Writebyte(para))
+                                   
                                     {
                                         flag = true;
                                         txtSendCmd.Text = (ZLB_PPIHelper.sendCmd);
                                     }
                                     break;
                                 case "Word":
-
-                                    if (ZLB_PPIHelper.WriteWord(client,Int32.Parse(txtAddress.Text),
-
-                                   (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                                 wValue,int.Parse(txtComNum.Text)))
+                                    if (ppiHelper.WriteWord(para))
                                     {
-
                                         txtSendCmd.Text = (ZLB_PPIHelper.sendCmd);
                                         flag = true;
                                     }
-
-
-                                 break;
+                                    break;
                                 case "DWord":
-
-                                    if (ZLB_PPIHelper.WriteDoubleWord(client,Int32.Parse(txtAddress.Text),
-
-                                   (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                                   wValue,Int32.Parse(txtComNum.Text)))
+                                    if (ppiHelper.WriteDoubleWord(para))
+                                   
                                     {
                                         flag = true;
 
@@ -369,16 +323,10 @@ namespace testPPI
 
                             #endregion
                         }
-
-
-
-
-
                         if (flag)
                         {
                             txtReceive.Text = (ZLB_PPIHelper.receiveByte);
-
-                        }
+                            }
                         else
                         {
                             txtReceive.Text = "写入失败";

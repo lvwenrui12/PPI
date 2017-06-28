@@ -37,7 +37,7 @@ namespace testPPI.PPI
             out byte[] bitValue)
         {
 
-            int i, Rece = 0;
+            int i = 0;
             byte fcs;
             byte[] Receives = new byte[28];
             if (storageType == Enums.StorageType.T)
@@ -189,7 +189,7 @@ namespace testPPI.PPI
                 return false;
             } //最大写入值255
 
-            int i, Rece = 0;
+            int i = 0;
             byte fcs;
             byte[] Receives = new byte[24];
 

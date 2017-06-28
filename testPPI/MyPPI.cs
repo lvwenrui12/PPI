@@ -47,13 +47,13 @@ namespace testPPI
                 comWrite.Items.Add(s);
             }
 
-            if (comportName.Items.Count>0)
+            if (comportName.Items.Count > 0)
             {
                 comportName.SelectedIndex = 0;
             }
 
             comStore.SelectedIndex = 0;
-          
+
             comWrite.SelectedIndex = 0;
 
             comRead.SelectedIndex = 0;
@@ -116,25 +116,32 @@ namespace testPPI
 
         private void btnRead_Click(object sender, EventArgs e)
         {
-         
+
 
             if (!PPIHelper.serialPort1.IsOpen)
             {
                 MessageBox.Show("请设置串口参数后打开", "警告");
                 return;
             }
-            bool flag = false;
+       
+         
 
-            byte[] readValues = new byte[] { };
+            PPIReadWritePara para=new PPIReadWritePara();
+            PPIReadWritePara readResult=new PPIReadWritePara();
 
-            if ((Enums.StorageType) Enum.Parse(typeof(Enums.StorageType), comStore.Text) == Enums.StorageType.T)
+            para.ByteAddress = int.Parse(txtAddress.Text);
+            para.Bitnumber = Int32.Parse(txtBit.Text);
+            para.StorageType= (Enums.StorageType)
+            Enum.Parse(typeof(Enums.StorageType), comStore.Text);
+            para.PlcAddress = int.Parse(txtPLC.Text);
+
+
+            if (para.StorageType == Enums.StorageType.T)
             {
 
-                if (PPIHelper.TReadDword(Int32.Parse(txtAddress.Text),out readValues ,Int32.Parse(txtPLC.Text)))
-                {
-                    flag = true;
-                }
-                txtSendCmd.Text = (PPIHelper);
+                readResult= PPIHelper.TReadDword(para);
+             
+                txtSendCmd.Text = (PPIHelper.sendCmd);
 
             }
             else
@@ -144,90 +151,28 @@ namespace testPPI
                 {
                     case "Bit":
 
-
-
-                        if (PPIHelper.Readbit(Int32.Parse(txtAddress.Text), Int32.Parse(txtBit.Text),
-
-                            (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                            out readValues,int.Parse(txtPLC.Text))
-                        {
-                            flag = true;
-
-
-                        }
-                        txtSendCmd.Text = ByteToString(PPIHelper.Rbyte);
+                        readResult = PPIHelper.Readbit(para);
+                        
+                        txtSendCmd.Text = (PPIHelper.sendCmd);
 
                         break;
                     case "Byte":
-                        if (txtReadCount.Text.Length == 0)
-                        {
-                            if (
-                             PPIHelper.Readbytes(Int32.Parse(txtAddress.Text),
 
-                            (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                            out readValues))
-                            {
-                                flag = true;
-
-                            }
-                            ;
-                        }
-                        else
-                        {
-                            if (PPIHelper.Readbytes(Int32.Parse(txtAddress.Text),
-
-                           (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                         out readValues, Int32.Parse(txtReadCount.Text)))
-                            {
-                                flag = true;
-
-                            }
-                            ;
-                        }
-                        txtSendCmd.Text = ByteToString(PPIHelper.Rbyte);
+                        readResult = PPIHelper.Readbytes(para);
+                        txtSendCmd.Text = (PPIHelper.sendCmd);
                         break;
-
-
+                        
                     case "Word":
-                        if (txtReadCount.Text.Length == 0)
-                        {
-                            if (PPIHelper.ReadWords(Int32.Parse(txtAddress.Text),
-
-                           (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                          out readValues))
-                            {
-                                flag = true;
-                            }
-                            ;
-                        }
-                        else
-                        {
-                            if (PPIHelper.ReadWords(Int32.Parse(txtAddress.Text),
-
-                          (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                          out readValues, Int32.Parse(txtReadCount.Text)))
-                            {
-                                flag = true;
-                            }
-
-                        }
-
-                        txtSendCmd.Text = ByteToString(PPIHelper.Rbyte);
+                       
+                readResult = PPIHelper.ReadWords(para);
+                txtSendCmd.Text = (PPIHelper.sendCmd);
                         break;
 
                     case "DWord":
+                        readResult = PPIHelper.ReadDWord(para);
 
-                        if (PPIHelper.ReadDWord(Int32.Parse(txtAddress.Text),
-
-                       (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                       out readValues))
-                        {
-                            flag = true;
-                        }
-                        txtSendCmd.Text = ByteToString(PPIHelper.Rbyte);
-
-
-
+                        txtSendCmd.Text = (PPIHelper.sendCmd);
+                        
                         break;
 
                     default:
@@ -238,26 +183,18 @@ namespace testPPI
                 }
                 #endregion
             }
-
-
-
-
-            if (flag)
+            if (readResult.IsSuceess)
             {
+                
+                txtReceive.Text = (PPIHelper.receiveByte);
 
-              
-
-                txtReceive.Text = ByteToString(PPIHelper.receiveByte);
-
-                txtValue.Text = ByteToString(readValues);
+                txtValue.Text = ByteToString(readResult.ReadValue);
             }
             else
             {
-             
 
                 txtReceive.Text = "读取失败";
-
-              
+                
             }
 
         }
@@ -282,8 +219,7 @@ namespace testPPI
 
         private void btnWrite_Click(object sender, EventArgs e)
         {
-            PPIHelper.PAddress.DAddress = Convert.ToByte(txtPLC.Text);
-
+        
             if (!PPIHelper.serialPort1.IsOpen)
             {
                 MessageBox.Show("请设置串口参数后打开", "警告");
@@ -291,7 +227,7 @@ namespace testPPI
             }
 
             int wValue = 0;
-            bool flag = false;
+        
             if (txtWriteValue.Text.Length == 0)
             {
                 MessageBox.Show("请输数值");
@@ -302,27 +238,38 @@ namespace testPPI
                 //{
                 //    MessageBox.Show("T，C寄存器等不能用写命令写入");
                 //    return;
-                  
+
                 //}
+
+                PPIReadWritePara para = new PPIReadWritePara();
+                bool flag = false;
+
+                para.ByteAddress = int.Parse(txtAddress.Text);
+                para.Bitnumber = Int32.Parse(txtBit.Text);
+                para.StorageType = (Enums.StorageType)
+                Enum.Parse(typeof(Enums.StorageType), comStore.Text);
+                para.PlcAddress = int.Parse(txtPLC.Text);
+             
+
 
                 if (int.TryParse(txtWriteValue.Text, out wValue))
                 {
-                    if ((Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text)==Enums.StorageType.T)
+                    para.WriteValue = int.Parse(txtWriteValue.Text);
+                    if ((Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text) == Enums.StorageType.T)
                     {
-                        if (PPIHelper.TwriteDWord(Int32.Parse(txtAddress.Text), wValue))
+                        if (PPIHelper.TwriteDWord(para))
                         {
+                          txtSendCmd.Text = (PPIHelper.sendCmd);
                             flag = true;
-                            txtSendCmd.Text = ByteToString(PPIHelper.TWritebyte); 
-
                         }
                     }
                     else if ((Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text) == Enums.StorageType.C)
                     {
-                        if (PPIHelper.CWriteWord(Int32.Parse(txtAddress.Text), wValue))
+                        if (PPIHelper.CWriteWord(para))
                         {
+                         
+                            txtSendCmd.Text = PPIHelper.sendCmd;
                             flag = true;
-                            txtSendCmd.Text = ByteToString(PPIHelper.CwriteWordByte);
-
                         }
                     }
                     else
@@ -332,56 +279,40 @@ namespace testPPI
                         {
                             case "Bit":
 
-                                if (PPIHelper.WriteBit(Int32.Parse(txtAddress.Text), Convert.ToByte(txtBit.Text),
-
-                                    (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                                    wValue))
+                                if (PPIHelper.WriteBit(para))
                                 {
+                                  txtSendCmd.Text = (PPIHelper.sendCmd);
                                     flag = true;
-
-                                    txtSendCmd.Text = ByteToString(PPIHelper.PAddress.Wbit);
                                 }
-
-
                                 break;
                             case "Byte":
 
-                                if (PPIHelper.Writebyte(Int32.Parse(txtAddress.Text),
-
-                                   (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                                wValue))
+                                if (PPIHelper.Writebyte(para))
                                 {
+                                  
+                                    txtSendCmd.Text = PPIHelper.sendCmd;
                                     flag = true;
-                                    txtSendCmd.Text = ByteToString(PPIHelper.Wbyte);
                                 }
-
                                 break;
+                                case "Word":
 
-
-                            case "Word":
-
-                                if (PPIHelper.WriteWord(Int32.Parse(txtAddress.Text),
-
-                               (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                             wValue))
+                                if (PPIHelper.WriteWord(para))
                                 {
 
-                                    txtSendCmd.Text = ByteToString(PPIHelper.Wword);
+                                    txtSendCmd.Text = (PPIHelper.sendCmd);
                                     flag = true;
+
                                 }
 
 
                                 break;
                             case "DWord":
 
-                                if (PPIHelper.WriteDWord(Int32.Parse(txtAddress.Text),
-
-                               (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text),
-                               wValue))
+                                if (PPIHelper.WriteDWord(para))
                                 {
+                                  
+                                    txtSendCmd.Text = PPIHelper.sendCmd;
                                     flag = true;
-
-                                    txtSendCmd.Text = ByteToString(PPIHelper.WDword);
 
                                 }
                                 break;
@@ -402,7 +333,7 @@ namespace testPPI
 
                     if (flag)
                     {
-                        txtReceive.Text = ByteToString(PPIHelper.receiveByte);
+                        txtReceive.Text = PPIHelper.receiveByte;
 
                     }
                     else
@@ -467,11 +398,11 @@ namespace testPPI
 
         private void comStore_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (comStore.Text=="T")
+            if (comStore.Text == "T")
             {
                 comRead.Items.RemoveAt(1);
                 comRead.Items.RemoveAt(1);
-               
+
                 comWrite.Items.RemoveAt(0);
                 comWrite.Items.RemoveAt(1);
                 comWrite.Items.RemoveAt(0);
@@ -492,7 +423,7 @@ namespace testPPI
                 comRead.SelectedIndex = 0;
                 comWrite.SelectedIndex = 0;
             }
-            
+
             else
             {
                 comRead.Items.Clear();
@@ -511,6 +442,6 @@ namespace testPPI
             }
         }
 
-     
+
     }
 }
