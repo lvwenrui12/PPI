@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.IO.Ports;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using MeiCloud.ZLB.ZlbDrive.PPI;
 using testPPI.Common;
 
 namespace testPPI.PPI
@@ -40,15 +42,7 @@ namespace testPPI.PPI
 
             int i = 0;
             byte fcs;
-            //byte[] Receives = new byte[28];
-            //if (storageType == Enums.StorageType.T)
-            //{
-            //    Receives = new byte[32];
-            //}
-            //if (storageType == Enums.StorageType.C)
-            //{
-            //    Receives = new byte[30];
-            //}
+           
 
             if (!serialPort1.IsOpen)
             {
@@ -107,10 +101,15 @@ namespace testPPI.PPI
 
             if (Receives != null)
             {
+               
                 receiveByte = ByteHelper.ByteToString(Receives);
-                para.ReadValue[0] = Receives[Receives.Length - 3];
-                para.IsSuceess = true;
 
+                if (Receives.Length>=3)
+                {
+                    para.ReadValue[0] = Receives[Receives.Length - 3];
+                    para.IsSuceess = true;
+                }
+              
             }
 
             return para;
@@ -595,18 +594,9 @@ namespace testPPI.PPI
             sPort.Write(sendData, 0, sendData.Length);
 
             sendCmd = ByteHelper.ByteToString(sendData);
-            while (sPort.BytesToRead == 0)
-            {
-                Stopwatch sw = new Stopwatch();
-                sw.Start();
-                if (sw.Elapsed > TimeSpan.FromSeconds(1))
-                {
-                    break;
-                }
-                sw.Stop();
+            ReadTimeOut(sPort, 1, 1);
 
-            }
-           
+
             if (sPort.BytesToRead > 0)
             {
                 if (0xe5 == sPort.ReadByte())
@@ -616,6 +606,7 @@ namespace testPPI.PPI
 
                     sPort.Write(ppiAddress.Affirm, 0, ppiAddress.Affirm.Length);
                 }
+                ReadTimeOut(sPort, 1, 20);
                 sPort.Read(Receives, 0, Receives.Length);
 
 
@@ -639,6 +630,22 @@ namespace testPPI.PPI
             return null;
 
 
+        }
+
+        public static void  ReadTimeOut(SerialPort sPort,int seconds,int byteLenth)
+        {
+            while (sPort.BytesToRead < byteLenth)
+            {
+                Stopwatch sw = new Stopwatch();
+                sw.Start();
+                if (sw.Elapsed > TimeSpan.FromSeconds(seconds))
+                {
+                    break;
+                }
+                sw.Stop();
+
+            }
+            
         }
 
 
@@ -1053,7 +1060,7 @@ namespace testPPI.PPI
 
         }
 
-        public static bool PLCStop()
+        public static bool PLCStop(PPIReadWritePara para)
         {
 
             if (!serialPort1.IsOpen)
@@ -1061,19 +1068,15 @@ namespace testPPI.PPI
                 serialPort1.Open();
 
             }
-
-            byte[] stop =
-            {
-                0x68, 0x1D, 0x1D, 0x68, 0x02, 0x00, 0x6C, 0x32, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00,
-                0x29, 0x00, 0x00, 0x00, 0x00, 0x00, 0x09, 0x50, 0x5F, 0x50, 0x52, 0x4F, 0x47, 0x52, 0x41, 0x4D, 0xAA,
-                0x16
-            };
+            PPIAddress ppiAddress = new PPIAddress();
+            ppiAddress.DAddress = Convert.ToByte(para.PlcAddress);
 
             serialPort1.DiscardInBuffer();
             serialPort1.DiscardOutBuffer();
 
-            serialPort1.Write(stop, 0, stop.Length);
+            serialPort1.Write(ppiAddress.StopBytesyte, 0, ppiAddress.StopBytesyte.Length);
             //Thread.Sleep(10);
+            string str = ByteHelper.ByteToString(ppiAddress.StopBytesyte);
 
             if (serialPort1.ReadByte() == 0xE5)
             {
@@ -1088,7 +1091,7 @@ namespace testPPI.PPI
         }
 
 
-        public static bool PLCRun()
+        public static bool PLCRun(PPIReadWritePara para)
         {
 
             if (!serialPort1.IsOpen)
@@ -1097,16 +1100,15 @@ namespace testPPI.PPI
 
             }
 
-            byte[] run =
-            {
-               0x68,0x21,0x21,0x68,0x02,0x00,0x6C,0x32,0x01,0x00,0x00,0x00,0x00,0x00,0x14,0x00,0x00,0x28,0x00,0x00,0x00,0x00,0x00,0x00,0xFD,0x00,0x00,0x09,0x50,0x5F,0x50,0x52,0x4F,0x47,0x52,0x41,0x4D,0xAA,0x16
-            };
-
+           PPIAddress ppiAddress=new PPIAddress();
+            ppiAddress.DAddress = Convert.ToByte(para.PlcAddress);
             serialPort1.DiscardInBuffer();
             serialPort1.DiscardOutBuffer();
 
-            serialPort1.Write(run, 0, run.Length);
-            //Thread.Sleep(100);
+            serialPort1.Write(ppiAddress.RunBytes,0, ppiAddress.RunBytes.Length);
+            string str = ByteHelper.ByteToString(ppiAddress.RunBytes);
+
+            Thread.Sleep(100);
             int recei = serialPort1.ReadByte();
             if (recei == 0xE5)
             {
@@ -1147,6 +1149,8 @@ namespace testPPI.PPI
                 byte[] Receives = new byte[ppiAddress.WriteReceivesCheck.Length];
                 port.Read(Receives, 0, Receives.Length);
                 receiveByte =ByteHelper.ByteToString(Receives);
+                string strcheck = ByteHelper.ByteToString(ppiAddress.WriteReceivesCheck);
+
                 int n = 0;
                 for (int j = 0; j < 24; j++)
                 {

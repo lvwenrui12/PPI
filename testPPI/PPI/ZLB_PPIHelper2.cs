@@ -6,7 +6,7 @@ using System.Net.Sockets;
 using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Threading;
-
+using MeiCloud.ZLB.ZlbDrive.PPI;
 using SimpleTCP;
 using testPPI.Common;
 using WpfModBusTest;

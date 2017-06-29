@@ -57,6 +57,8 @@ namespace testPPI
             comWrite.SelectedIndex = 0;
 
             comRead.SelectedIndex = 0;
+
+            
         }
 
 
@@ -77,7 +79,7 @@ namespace testPPI
                     PPIHelper.serialPort1.Parity = (Parity)Enum.Parse(typeof(Parity), this.comboBox5.Text);
                     PPIHelper.serialPort1.PortName = this.comportName.Text;
                     //comport.Encoding = Encoding.ASCII;
-
+                    PPIHelper.serialPort1.ReadTimeout = 500;
                     //打开端口
                     PPIHelper.serialPort1.Open();
                 }
@@ -377,7 +379,15 @@ namespace testPPI
 
         private void btnStop_Click(object sender, EventArgs e)
         {
-            if (PPIHelper.PLCStop())
+            //plc地址不是 02，验证失败
+
+            PPIReadWritePara para = new PPIReadWritePara();
+
+            para.PlcAddress = int.Parse(txtPLC.Text);
+
+
+
+            if (PPIHelper.PLCStop(para))
             {
                 btnPLCRun.Enabled = true;
                 btnStop.Enabled = false;
@@ -387,7 +397,13 @@ namespace testPPI
 
         private void btnPLCRun_Click(object sender, EventArgs e)
         {
-            if (PPIHelper.PLCRun())
+            //plc地址不是 02，验证失败
+
+            PPIReadWritePara para = new PPIReadWritePara();
+     
+            para.PlcAddress = int.Parse(txtPLC.Text);
+
+            if (PPIHelper.PLCRun(para))
             {
                 btnStop.Enabled = true;
                 btnPLCRun.Enabled = false;

@@ -54,15 +54,16 @@ namespace MeiCloud.ZLB.ZlbDrive.PPI
                 Affirm[1] = _DAddress;
                 TWritebyte[4] = _DAddress;
                 CwriteWordByte[4] = _DAddress;
+                WriteReceivesCheck[5] = _DAddress;
+                RunBytes[4] = _DAddress;
+                StopBytesyte[4] = _DAddress;
 
-                int i;
-                byte fcs;
-                for (i = 1, fcs = 0; i < 4; i++)
-                {
-                    fcs += Affirm[i];
-                }
-                int tt = Convert.ToInt32(fcs) % 256; //添加的代码 mod 256
-                Affirm[4] = Convert.ToByte(tt);
+                WriteReceivesCheck[WriteReceivesCheck.Length - 2]= fcsByte(WriteReceivesCheck, 5, WriteReceivesCheck.Length - 2);
+                Affirm[4] = fcsByte(Affirm, 1, 4);
+
+                //RunBytes[RunBytes.Length - 2] = fcsByte(RunBytes, 4, RunBytes.Length - 2);
+                //StopBytesyte[StopBytesyte.Length - 2] = fcsByte(StopBytesyte, 4, StopBytesyte.Length - 2);
+
             }
         }//PLC地址，DA，默认情况下，PLC的地址为02H
 
@@ -83,19 +84,45 @@ namespace MeiCloud.ZLB.ZlbDrive.PPI
                 WDword[5] = _SAddress;
                 TWritebyte[5] = _SAddress;
                 CwriteWordByte[5] = _SAddress;
+                RunBytes[5] = _SAddress;
+                StopBytesyte[5] = _SAddress;
+                WriteReceivesCheck[WriteReceivesCheck.Length - 2] = fcsByte(WriteReceivesCheck, 5, WriteReceivesCheck.Length - 2);
+                Affirm[4] = fcsByte(Affirm, 1, 4);
+                RunBytes[RunBytes.Length - 2] = fcsByte(RunBytes, 4, RunBytes.Length - 2);
+                StopBytesyte[StopBytesyte.Length - 2] = fcsByte(StopBytesyte, 4, StopBytesyte.Length - 2);
 
-                int i;
-                byte fcs;
-                for (i = 1, fcs = 0; i < 4; i++)
-                {
-                    fcs += Affirm[i];
-                }
-                int tt = Convert.ToInt32(fcs) % 256; //添加的代码 mod 256
-                Affirm[4] = Convert.ToByte(tt);
             }
         } //上位机地址 SA，//SA源地址，默认情况下，PC机地址为00H，HMI设备的地址为01H
 
         #endregion
+
+        public byte[] RunBytes = {
+               0x68,0x21,0x21,0x68,0x02,0x00,0x6C,0x32,0x01,0x00,0x00,0x00,0x00,0x00,0x14,0x00,0x00,0x28,0x00,0x00,0x00,0x00,0x00,0x00,0xFD,0x00,0x00,0x09,0x50,0x5F,0x50,0x52,0x4F,0x47,0x52,0x41,0x4D,0xAA,0x16
+            };
+
+      public  byte[] StopBytesyte =
+           {
+                0x68, 0x1D, 0x1D, 0x68, 0x02, 0x00, 0x6C, 0x32, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00,
+                0x29, 0x00, 0x00, 0x00, 0x00, 0x00, 0x09, 0x50, 0x5F, 0x50, 0x52, 0x4F, 0x47, 0x52, 0x41, 0x4D, 0xAA,
+                0x16
+            };
+
+
+
+        public static byte fcsByte(byte[] dataBytes, int start, int end)
+        {
+            byte fcs = 0;
+
+            for (int i = start; i < end; i++)
+            {
+                fcs += dataBytes[i];
+            }
+
+            int tt = Convert.ToInt32(fcs) % 256; //添加的代码 mod 256
+            fcs = Convert.ToByte(tt);
+
+            return fcs;
+        }
 
 
         #region Rbyte
