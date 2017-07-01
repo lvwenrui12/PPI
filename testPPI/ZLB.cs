@@ -144,7 +144,7 @@ namespace testPPI
             {
                 PPIReadWritePara para = new PPIReadWritePara();
                 para.StorageType = (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text);
-                para.TcpClient = client;
+                para.TcpClient =tcpClient;
                 para.ByteAddress = Int32.Parse(txtAddress.Text);
                 para.Bitnumber = int.Parse(txtBit.Text);
                 para.PlcAddress = int.Parse(txtPLC.Text);
@@ -239,7 +239,7 @@ namespace testPPI
                 {
                     PPIReadWritePara para = new PPIReadWritePara();
                     para.StorageType = (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text);
-                    para.TcpClient = client;
+                    para.TcpClient = tcpClient;
                     para.ByteAddress = Int32.Parse(txtAddress.Text);
                     para.Bitnumber = int.Parse(txtBit.Text);
                     para.PlcAddress = int.Parse(txtPLC.Text);
@@ -446,12 +446,12 @@ namespace testPPI
             try
             {
 
-                IPAddress ipAddress = IPAddress.Parse(txtIP.Text);
-                IPEndPoint remoteEP = new IPEndPoint(ipAddress, int.Parse(txtPort.Text));
+                //IPAddress ipAddress = IPAddress.Parse(txtIP.Text);
+                //IPEndPoint remoteEP = new IPEndPoint(ipAddress, int.Parse(txtPort.Text));
 
-                client.Connect(remoteEP);
+                //client.Connect(remoteEP);
 
-                //  tcpClient.Connect(txtIP.Text, int.Parse(txtPort.Text));
+               tcpClient.Connect(txtIP.Text, int.Parse(txtPort.Text));
 
                 //ZLB_PPIHelper.tcpClient.Connect(IPAddress.Parse(txtIP.Text), int.Parse(txtPort.Text));
 

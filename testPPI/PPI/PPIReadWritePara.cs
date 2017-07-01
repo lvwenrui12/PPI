@@ -9,7 +9,8 @@ namespace testPPI.PPI
 {
     public class PPIReadWritePara
     {
-        public Socket TcpClient { get; set; }
+    //   public Socket TcpClient { get; set; }
+        public TcpClient TcpClient { get; set; }
 
         public int ComNum { get; set; }
 

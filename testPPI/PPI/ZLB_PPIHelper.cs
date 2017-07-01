@@ -392,7 +392,7 @@ namespace testPPI.PPI
         #endregion
 
 
-        public byte[] ReceiveReadByte(Socket tcpClient, byte[] Rbyte, PPIAddress ppiAddress, int ComNum)
+        public byte[] ReceiveReadByte(TcpClient tcpClient, byte[] Rbyte, PPIAddress ppiAddress, int ComNum)
         {
             byte[] Receives = new byte[100];
             Rbyte = GetSendData(Rbyte);
@@ -402,9 +402,9 @@ namespace testPPI.PPI
             byte[] receivesAffirm = new byte[8];
             try
             {
-                tcpClient.Send(Rbyte);
+                tcpClient.Client.Send(Rbyte);
 
-                int n = tcpClient.Receive(receivesAffirm);
+                int n = tcpClient.Client.Receive(receivesAffirm);
                 if (n > 0)
                 {
                     if (receivesAffirm[5] == Convert.ToByte(ComNum) && receivesAffirm[6] == ppiAddress.confirm)
@@ -413,9 +413,9 @@ namespace testPPI.PPI
 
                         Rbyte = GetSendData(Rbyte);
 
-                        tcpClient.Send(Rbyte);
+                        tcpClient.Client.Send(Rbyte);
 
-                        int m = tcpClient.Receive(Receives);
+                        int m = tcpClient.Client.Receive(Receives);
 
                         if (m > 0)
                         {
@@ -849,7 +849,7 @@ namespace testPPI.PPI
         }
 
 
-        public bool WriteData(Socket tcpClient, byte[] SendData, PPIAddress ppiAddress, int ComNum)
+        public bool WriteData(TcpClient tcpClient, byte[] SendData, PPIAddress ppiAddress, int ComNum)
         {
             SendData = GetSendData(SendData);
 
@@ -859,9 +859,9 @@ namespace testPPI.PPI
             byte[] receivesAffirm = new byte[8];
             try
             {
-                tcpClient.Send(SendData);
+                tcpClient.Client.Send(SendData);
 
-                int n = tcpClient.Receive(receivesAffirm);
+                int n = tcpClient.Client.Receive(receivesAffirm);
                 if (n > 0)
                 {
                     if (receivesAffirm[5] == Convert.ToByte(ComNum) && receivesAffirm[6] == ppiAddress.confirm)
@@ -872,12 +872,12 @@ namespace testPPI.PPI
 
                         SendData = GetSendData(SendData);
 
-                        tcpClient.Send(SendData);
+                        tcpClient.Client.Send(SendData);
 
                         string str = ByteHelper.ByteToString(SendData);
 
                         byte[] Receives = new byte[ppiAddress.WriteReceivesCheck.Length + 7];
-                        int m = tcpClient.Receive(Receives);
+                        int m = tcpClient.Client.Receive(Receives);
 
                         if (m > 0)
                         {
