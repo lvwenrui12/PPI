@@ -454,9 +454,8 @@ namespace testPPI
                tcpClient.Connect(txtIP.Text, int.Parse(txtPort.Text));
 
                 //ZLB_PPIHelper.tcpClient.Connect(IPAddress.Parse(txtIP.Text), int.Parse(txtPort.Text));
-
-
-
+             
+            
 
             }
             catch (SocketException ex)
@@ -512,6 +511,31 @@ namespace testPPI
         {
 
             client.Close();
+        }
+
+        private void txtPort_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void txtIP_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label8_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label17_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void txtComNum_TextChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }

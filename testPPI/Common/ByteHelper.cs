@@ -33,5 +33,15 @@ namespace testPPI.Common
             return strBuilder.ToString();
 
         }
+
+        public static byte[] StringToByte(string str)
+        {
+            return System.Text.Encoding.Default.GetBytes(str);
+
+           
+        }
+
+
+
     }
 }

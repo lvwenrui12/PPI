@@ -4,7 +4,8 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 
-namespace WpfModBusTest
+
+namespace testPPI
 {
     public class MeiCloudHelper:IMeiCloud
     {

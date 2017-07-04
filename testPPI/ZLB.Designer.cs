@@ -478,6 +478,7 @@
             this.txtIP.Size = new System.Drawing.Size(122, 21);
             this.txtIP.TabIndex = 35;
             this.txtIP.Text = "10.32.0.165";
+            this.txtIP.TextChanged += new System.EventHandler(this.txtIP_TextChanged);
             // 
             // label8
             // 
@@ -487,6 +488,7 @@
             this.label8.Size = new System.Drawing.Size(41, 12);
             this.label8.TabIndex = 34;
             this.label8.Text = "IP地址";
+            this.label8.Click += new System.EventHandler(this.label8_Click);
             // 
             // txtPort
             // 
@@ -495,6 +497,7 @@
             this.txtPort.Size = new System.Drawing.Size(122, 21);
             this.txtPort.TabIndex = 37;
             this.txtPort.Text = "5000";
+            this.txtPort.TextChanged += new System.EventHandler(this.txtPort_TextChanged);
             // 
             // label17
             // 
@@ -504,6 +507,7 @@
             this.label17.Size = new System.Drawing.Size(41, 12);
             this.label17.TabIndex = 36;
             this.label17.Text = "端口号";
+            this.label17.Click += new System.EventHandler(this.label17_Click);
             // 
             // txtComNum
             // 
@@ -512,6 +516,7 @@
             this.txtComNum.Size = new System.Drawing.Size(122, 21);
             this.txtComNum.TabIndex = 39;
             this.txtComNum.Text = "5";
+            this.txtComNum.TextChanged += new System.EventHandler(this.txtComNum_TextChanged);
             // 
             // label18
             // 
