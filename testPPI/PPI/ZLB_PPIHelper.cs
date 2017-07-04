@@ -12,7 +12,6 @@ using AsynchronousSocket;
 using MeiCloud.ZLB.ZlbDrive.PPI;
 using SimpleTCP;
 using testPPI.Common;
-using WpfModBusTest;
 
 namespace testPPI.PPI
 {

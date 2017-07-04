@@ -112,30 +112,124 @@ namespace testPPI
         {
             try
             {
+                int i = 0;
                 while (true)
                 {
-
-
-
                     if (!quere.IsEmpty)
                     {
                        byte[]receiceData= this.quere.TryDequeueBox();
-                        string ReceStr = ByteHelper.ByteToString(receiceData);
 
 
-                        if (this.textBox1.InvokeRequired)//等待异步 
+                        List<byte> bytesList = new List<byte>(receiceData);
+                        for (int j = bytesList.Count - 1; j >= 0; j--)
                         {
-                            Action<string> actionDelegate = (x) => { this.textBox1.Text = x.ToString(); };
-                            // 或者
-                            // Action<string> actionDelegate = delegate(string txt) { this.label2.Text = txt; };
-                            this.textBox1.Invoke(actionDelegate, ReceStr);
-                            
+                            if (bytesList[j] == 0)
+                            {
+                                bytesList.RemoveAt(j);
+                            }
+                            else
+                            {
+                                break;
+                            }
                         }
-                        else
-                        {
-                            this.textBox1.Text = ReceStr;
 
+
+
+
+
+                        string ReceStr = (i++).ToString()+"--"+ByteHelper.ByteToString(bytesList.ToArray()) ;
+                        if (bytesList.Count>0)
+                        {
+
+                            if (bytesList.Count>5)
+                            {
+                                if (bytesList[5]==1)
+                                {
+                                    if (this.txtRece1.InvokeRequired)//等待异步 
+                                    {
+                                        Action<string> actionDelegate = (x) => { this.txtRece1.Text = x.ToString(); };
+                                        // 或者
+                                        // Action<string> actionDelegate = delegate(string txt) { this.label2.Text = txt; };
+                                        this.txtRece1.Invoke(actionDelegate, ReceStr);
+
+                                    }
+                                    else
+                                    {
+                                        this.txtRece1.Text = ReceStr;
+
+                                    }
+                                }
+                                else if(bytesList[5] == 2)
+                                {
+                                    if (this.txtRece2.InvokeRequired)//等待异步 
+                                    {
+                                        Action<string> actionDelegate = (x) => { this.txtRece2.Text = x.ToString(); };
+                                        // 或者
+                                        // Action<string> actionDelegate = delegate(string txt) { this.label2.Text = txt; };
+                                        this.txtRece2.Invoke(actionDelegate, ReceStr);
+
+                                    }
+                                    else
+                                    {
+                                        this.txtRece2.Text = ReceStr;
+
+                                    }
+                                }
+                                else if (bytesList[5] == 3)
+                                {
+                                    if (this.txtRece3.InvokeRequired)//等待异步 
+                                    {
+                                        Action<string> actionDelegate = (x) => { this.txtRece3.Text = x.ToString(); };
+                                        // 或者
+                                        // Action<string> actionDelegate = delegate(string txt) { this.label2.Text = txt; };
+                                        this.txtRece3.Invoke(actionDelegate, ReceStr);
+
+                                    }
+                                    else
+                                    {
+                                        this.txtRece3.Text = ReceStr;
+
+                                    }
+                                }
+                                else if(bytesList[5] == 4)
+                                {
+                                    if (this.txtRece4.InvokeRequired)//等待异步 
+                                    {
+                                        Action<string> actionDelegate = (x) => { this.txtRece4.Text = x.ToString(); };
+                                        // 或者
+                                        // Action<string> actionDelegate = delegate(string txt) { this.label2.Text = txt; };
+                                        this.txtRece4.Invoke(actionDelegate, ReceStr);
+
+                                    }
+                                    else
+                                    {
+                                        this.txtRece4.Text = ReceStr;
+
+                                    }
+
+                                }
+                                else if (bytesList[5] == 5)
+                                {
+                                    if (this.txtRece3.InvokeRequired)//等待异步 
+                                    {
+                                        Action<string> actionDelegate = (x) => { this.txtRece5.Text = x.ToString(); };
+                                        // 或者
+                                        // Action<string> actionDelegate = delegate(string txt) { this.label2.Text = txt; };
+                                        this.txtRece5.Invoke(actionDelegate, ReceStr);
+
+                                    }
+                                    else
+                                    {
+                                        this.txtRece5.Text = ReceStr;
+
+                                    }
+                                }
+
+
+                            }
                         }
+                      
+                       
 
 
 
@@ -163,12 +257,12 @@ namespace testPPI
 
             try
             {
-
+                NetworkStream netStream = tcpClient.GetStream();
                 while (true)
                 {
                     ListenMaualReset.WaitOne();
 
-                    NetworkStream netStream = tcpClient.GetStream();
+                 
                     if (netStream.CanRead)
                     {
                         // Reads NetworkStream into a byte buffer.
@@ -177,7 +271,7 @@ namespace testPPI
                         // Read can return anything from 0 to numBytesToRead. 
                         // This method blocks until at least one byte is read.
                         netStream.Read(bytes, 0, (int)tcpClient.ReceiveBufferSize);
-
+                       
                         // Returns the data received from the host to the console.
                         string returndata = Encoding.UTF8.GetString(bytes);
 
@@ -193,15 +287,17 @@ namespace testPPI
                         
                     }
                 
-                    netStream.Close();
+                  
                     
                 }
 
+                netStream.Close();
+
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                
-                throw;
+
+                MessageBox.Show(ex.ToString());
             }
 
 
@@ -216,5 +312,7 @@ namespace testPPI
 
             ComsuThread=new Thread(()=> ComsuData());
         }
+
+     
     }
 }
