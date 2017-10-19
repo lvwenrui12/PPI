@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 namespace testPPI
 {
     /// <summary>
-    /// 智联宝设备走modbus协议驱动
+    /// 设备走modbus协议驱动
     /// </summary>
     public class ZlbDeviceDrive
     {
@@ -39,11 +39,11 @@ namespace testPPI
         //}
 
 
-        public ZlbDeviceDrive()
+        public ZlbDeviceDrive(TcpClient tcpClient)
         {
-        
-          
-           
+
+            this.tcpClient = tcpClient;
+
         }
 
 
@@ -110,7 +110,17 @@ namespace testPPI
         {
             byte[] SendData = MergerArray(new []{ Convert.ToByte(ComNum)}, Content);
 
-            tcpClient.Client.Send(SendData);
+            SendData = GetSendData(SendData);
+
+            if (tcpClient!=null)
+            {
+                if (tcpClient.Connected)
+                {
+                    tcpClient.Client.Send(SendData);
+                }
+            }
+            
+        
 
             
         }

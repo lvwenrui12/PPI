@@ -18,7 +18,7 @@ namespace testPPI.PPI
     public class ZLB_PPIHelper
     {
 
-        //2017-5 吕文瑞
+       
 
         public static string receiveByte;
 
@@ -102,7 +102,7 @@ namespace testPPI.PPI
             #endregion
 
             //接收到的数据：AA 00 02 44 03 05 E5 A5 
-
+            string str = ByteHelper.ByteToString(SendData);
 
             byte[] Receives = ReceiveReadByte(readPara.TcpClient, SendData, ppiAddress, readPara.ComNum);
 

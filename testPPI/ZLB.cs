@@ -40,12 +40,7 @@ namespace testPPI
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            //自动获取COM口名称
-            foreach (string com in System.IO.Ports.SerialPort.GetPortNames())
-            {
-                this.comportName.Items.Add(com);
-            }
-
+           
             foreach (string s in Enum.GetNames(typeof(Enums.StorageType)))
             {
                 comStore.Items.Add(s);
@@ -61,10 +56,7 @@ namespace testPPI
                 comWrite.Items.Add(s);
             }
 
-            if (comportName.Items.Count > 0)
-            {
-                comportName.SelectedIndex = 0;
-            }
+        
 
             comStore.SelectedIndex = 0;
 
@@ -80,46 +72,7 @@ namespace testPPI
 
 
 
-        private void button1_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                if (serialPort1.IsOpen)
-                {
-                    serialPort1.Close();
-                }
-                else
-                {
-                    // 设置端口参数
-                    serialPort1.BaudRate = int.Parse(this.comboBox2.Text);
-                    serialPort1.DataBits = int.Parse(this.comboBox3.Text);
-                    serialPort1.StopBits = (StopBits)Enum.Parse(typeof(StopBits), this.comboBox4.Text);
-                    serialPort1.Parity = (Parity)Enum.Parse(typeof(Parity), this.comboBox5.Text);
-                    serialPort1.PortName = this.comportName.Text;
-                    //comport.Encoding = Encoding.ASCII;
-
-                    //打开端口
-                    serialPort1.Open();
-                }
-                this.groupBox1.Enabled = !serialPort1.IsOpen;
-                //txtsend.Enabled = btnsend.Enabled = comport.IsOpen;
-
-                if (serialPort1.IsOpen)
-                {
-                    this.button1.Text = "关闭端口";
-                }
-                else
-                {
-                    this.button1.Text = "打开端口";
-                }
-                //if (this.serialPort1.IsOpen) txtsend.Focus();
-            }
-            catch (Exception er)
-            {
-                MessageBox.Show("端口打开失败！" + er.Message, "提示");
-            }
-
-        }
+   
 
         private void button18_Click(object sender, EventArgs e)
         {
@@ -140,7 +93,7 @@ namespace testPPI
             PPIReadWritePara readResult = new PPIReadWritePara();
             ZLB_PPIHelper zlbPPI = new ZLB_PPIHelper();
 
-            if (client.Connected)
+            if (tcpClient.Connected)
             {
                 PPIReadWritePara para = new PPIReadWritePara();
                 para.StorageType = (Enums.StorageType)Enum.Parse(typeof(Enums.StorageType), comStore.Text);
@@ -198,14 +151,19 @@ namespace testPPI
 
                 }
             }
+            else
+            {
+                MessageBox.Show("连接断开");
+            }
+
             if (readResult.IsSuceess)
             {
-                txtReceive.Text = ZLB_PPIHelper.receiveByte;
+                txtReceive1.Text = ZLB_PPIHelper.receiveByte;
                 txtValue.Text = ByteHelper.ByteToString(readResult.ReadValue);
             }
             else
             {
-                txtReceive.Text = "读取失败";
+                txtReceive1.Text = "读取失败";
 
             }
 
@@ -325,11 +283,11 @@ namespace testPPI
                         }
                         if (flag)
                         {
-                            txtReceive.Text = (ZLB_PPIHelper.receiveByte);
+                            txtReceive1.Text = (ZLB_PPIHelper.receiveByte);
                             }
                         else
                         {
-                            txtReceive.Text = "写入失败";
+                            txtReceive1.Text = "写入失败";
                         }
 
                     }
@@ -467,6 +425,8 @@ namespace testPPI
 
         }
 
+
+
         private void serialPort1_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
 
@@ -500,7 +460,7 @@ namespace testPPI
            (new EventHandler
              (delegate
              {
-                 this.txtReceive.Text += BitConverter.ToString(data);
+                 this.txtReceive1.Text += BitConverter.ToString(data);
              }
              )
             );
