@@ -25,7 +25,17 @@ namespace testPPI
             InitializeComponent();
         }
 
+        string ip = "";
+        int port = 0;
 
+        MCDrive drive = null;
+        private Thread Com1suThread;
+        private Thread Com2suThread;
+        private Thread Com3suThread;
+        private Thread Com4suThread;
+        private Thread Com5suThread;
+
+        private Thread ComsuThread;
 
 
 
@@ -91,7 +101,7 @@ namespace testPPI
         {
             
             PPIReadWritePara readResult = new PPIReadWritePara();
-            ZLB_PPIHelper zlbPPI = new ZLB_PPIHelper();
+            //ZLB_PPIHelper zlbPPI = new ZLB_PPIHelper();
 
             if (tcpClient.Connected)
             {
@@ -107,10 +117,39 @@ namespace testPPI
                 para.WriteValue = int.Parse(txtWriteValue.Text);
              if (para.StorageType == Enums.StorageType.T)
                 {
-                     readResult = zlbPPI.TReadDword(para);
-                    
-                    txtSendCmd.Text = ZLB_PPIHelper.sendCmd;
+                    MeiCloud.ZLB.ZlbDrive.PPI.PPIAddress ppiAddress = new MeiCloud.ZLB.ZlbDrive.PPI.PPIAddress();
 
+                    drive.WriteCom(para.ComNum, ppiHelper.GetTReadDword(para,out ppiAddress));
+                    //线程 对队列操作，这里就不能ReadCom
+                  
+                    byte[] receivesAffirm = drive?.receiceData[para.ComNum];
+                    if (receivesAffirm!=null&& receivesAffirm.Length>0)
+                    {
+                        if (receivesAffirm[5] == Convert.ToByte(para.ComNum) && receivesAffirm[6] == ppiAddress.confirm)
+                        {
+                            drive.WriteCom(para.ComNum, ppiAddress.Affirm);
+
+                        }
+                        drive.receiceData[para.ComNum] = null;
+                    }
+                    else
+                    {
+                        Thread.Sleep(50);
+                        if (receivesAffirm != null && receivesAffirm.Length > 0)
+                        {
+                            if (receivesAffirm[5] == Convert.ToByte(para.ComNum) && receivesAffirm[6] == ppiAddress.confirm)
+                            {
+                                drive.WriteCom(para.ComNum, ppiAddress.Affirm);
+                                                            }
+                            drive.receiceData[para.ComNum] = null;
+                        }
+                        else
+                        {
+
+                        }
+
+                    }
+                    
                 }
                 else
                 {
@@ -120,16 +159,16 @@ namespace testPPI
                     {
                         case "Bit":
 
-                            readResult = zlbPPI.Readbit(para);
+                            readResult = ppiHelper.Readbit(para);
                         
                             txtSendCmd.Text = ZLB_PPIHelper.sendCmd;
                             break;
                         case "Byte":
-                            readResult = zlbPPI.Readbytes(para);
+                            readResult = ppiHelper.Readbytes(para);
                             txtSendCmd.Text = (ZLB_PPIHelper.sendCmd);
                             break;
                         case "Word":
-                            readResult = zlbPPI.ReadWords(para);
+                            readResult = ppiHelper.ReadWords(para);
                             txtSendCmd.Text = (ZLB_PPIHelper.sendCmd);
                       
                             txtSendCmd.Text = ZLB_PPIHelper.sendCmd;
@@ -137,7 +176,7 @@ namespace testPPI
 
                         case "DWord":
 
-                            readResult = zlbPPI.ReadDoubleWord(para);
+                            readResult = ppiHelper.ReadDoubleWord(para);
                             txtSendCmd.Text = (ZLB_PPIHelper.sendCmd);
                          
                             txtSendCmd.Text = ZLB_PPIHelper.sendCmd;
@@ -396,33 +435,87 @@ namespace testPPI
             }
         }
 
+        private void ComThread()
+        {
 
+            Com1suThread = new Thread(() => ComsuData(1, txtReceive1));
+            Com2suThread = new Thread(() => ComsuData(2, txtReceive2));
+            Com3suThread = new Thread(() => ComsuData(3, txtReceive3));
+            Com4suThread = new Thread(() => ComsuData(4, txtReceive4));
+            Com5suThread = new Thread(() => ComsuData(5, txtReceive5));
 
+            Com1suThread.Start();
+            Com2suThread.Start();
+            Com3suThread.Start();
+            Com4suThread.Start();
+            Com5suThread.Start();
+
+        }
+             private void ComsuData(int ComNum, TextBox txtRece)
+        {
+           
+            try
+            {
+                int i = 0;
+                while (true)
+                {
+                    byte[] receiceData = drive?.ReadCom(ComNum-1);
+
+                    if (receiceData != null)
+                    {
+
+                      //  System.Byte.
+                        System.Text.ASCIIEncoding ASCII = new System.Text.ASCIIEncoding();
+
+                       string str = ASCII.GetString(receiceData);
+                        //string str = new String(receiceData);
+                        string ReceStr = (i++).ToString() + "--" + str;
+
+                        //string ReceStr = (i++).ToString() + "--" + ByteHelper.ByteToString(receiceData.ToArray());
+
+                        if (txtRece.InvokeRequired)
+                        {
+                            txtRece.Invoke(new Action(() =>
+                            {
+                                txtRece.Text = ReceStr;
+                            }));
+                        }
+                        else
+                        {
+                            txtRece.Text = ReceStr;
+                        }
+                    }
+                   
+                    Thread.Sleep(1);
+
+                }
+
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.ToString());
+
+            }
+
+        }
 
         private void button2_Click(object sender, EventArgs e)
         {
             try
             {
-
-                //IPAddress ipAddress = IPAddress.Parse(txtIP.Text);
-                //IPEndPoint remoteEP = new IPEndPoint(ipAddress, int.Parse(txtPort.Text));
-
-                //client.Connect(remoteEP);
-
-               tcpClient.Connect(txtIP.Text, int.Parse(txtPort.Text));
-
-                //ZLB_PPIHelper.tcpClient.Connect(IPAddress.Parse(txtIP.Text), int.Parse(txtPort.Text));
-             
-            
-
+                this.ip = txtIP.Text;
+                this.port = int.Parse(txtPort.Text);
+                drive = new MCDrive(ip, port);
+                if (drive.Connected)
+                {
+                    ComThread();
+                }
             }
-            catch (SocketException ex)
+            catch (Exception ex)
             {
                 MessageBox.Show("智联宝连接失败:" + ex.Message);
             }
-
-
-
+            
         }
 
 

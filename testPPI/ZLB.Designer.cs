@@ -59,8 +59,6 @@
             this.label8 = new System.Windows.Forms.Label();
             this.txtPort = new System.Windows.Forms.TextBox();
             this.label17 = new System.Windows.Forms.Label();
-            this.txtComNum = new System.Windows.Forms.TextBox();
-            this.label18 = new System.Windows.Forms.Label();
             this.serialPort1 = new System.IO.Ports.SerialPort(this.components);
             this.txtPLC = new System.Windows.Forms.TextBox();
             this.label19 = new System.Windows.Forms.Label();
@@ -77,6 +75,8 @@
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
+            this.txtComNum = new System.Windows.Forms.TextBox();
+            this.label18 = new System.Windows.Forms.Label();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -282,7 +282,7 @@
             // 
             // btnWrite
             // 
-            this.btnWrite.Location = new System.Drawing.Point(306, 20);
+            this.btnWrite.Location = new System.Drawing.Point(320, 24);
             this.btnWrite.Name = "btnWrite";
             this.btnWrite.Size = new System.Drawing.Size(73, 27);
             this.btnWrite.TabIndex = 30;
@@ -357,24 +357,6 @@
             this.label17.TabIndex = 36;
             this.label17.Text = "端口号";
             this.label17.Click += new System.EventHandler(this.label17_Click);
-            // 
-            // txtComNum
-            // 
-            this.txtComNum.Location = new System.Drawing.Point(271, 20);
-            this.txtComNum.Name = "txtComNum";
-            this.txtComNum.Size = new System.Drawing.Size(122, 21);
-            this.txtComNum.TabIndex = 39;
-            this.txtComNum.Text = "5";
-            this.txtComNum.TextChanged += new System.EventHandler(this.txtComNum_TextChanged);
-            // 
-            // label18
-            // 
-            this.label18.AutoSize = true;
-            this.label18.Location = new System.Drawing.Point(197, 28);
-            this.label18.Name = "label18";
-            this.label18.Size = new System.Drawing.Size(53, 12);
-            this.label18.TabIndex = 38;
-            this.label18.Text = "串口口号";
             // 
             // serialPort1
             // 
@@ -539,6 +521,24 @@
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "写";
             // 
+            // txtComNum
+            // 
+            this.txtComNum.Location = new System.Drawing.Point(271, 20);
+            this.txtComNum.Name = "txtComNum";
+            this.txtComNum.Size = new System.Drawing.Size(122, 21);
+            this.txtComNum.TabIndex = 39;
+            this.txtComNum.Text = "5";
+            this.txtComNum.TextChanged += new System.EventHandler(this.txtComNum_TextChanged);
+            // 
+            // label18
+            // 
+            this.label18.AutoSize = true;
+            this.label18.Location = new System.Drawing.Point(197, 28);
+            this.label18.Name = "label18";
+            this.label18.Size = new System.Drawing.Size(53, 12);
+            this.label18.TabIndex = 38;
+            this.label18.Text = "串口口号";
+            // 
             // ZLB
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -608,8 +608,6 @@
         private System.Windows.Forms.Label label8;
         private System.Windows.Forms.TextBox txtPort;
         private System.Windows.Forms.Label label17;
-        private System.Windows.Forms.TextBox txtComNum;
-        private System.Windows.Forms.Label label18;
         private System.IO.Ports.SerialPort serialPort1;
         private System.Windows.Forms.TextBox txtPLC;
         private System.Windows.Forms.Label label19;
@@ -626,6 +624,8 @@
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.GroupBox groupBox3;
+        private System.Windows.Forms.Label label18;
+        private System.Windows.Forms.TextBox txtComNum;
     }
 }
 

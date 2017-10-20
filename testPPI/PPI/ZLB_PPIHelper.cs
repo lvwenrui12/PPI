@@ -104,16 +104,16 @@ namespace testPPI.PPI
             //接收到的数据：AA 00 02 44 03 05 E5 A5 
             string str = ByteHelper.ByteToString(SendData);
 
-            byte[] Receives = ReceiveReadByte(readPara.TcpClient, SendData, ppiAddress, readPara.ComNum);
+           byte[] Receives = ReceiveReadByte(readPara.TcpClient, SendData, ppiAddress, readPara.ComNum);
 
-            if (Receives != null)
-            {
-                readPara.IsSuceess = true;
+            //if (Receives != null)
+            //{
+            //    readPara.IsSuceess = true;
 
-                readPara.ReadValue[0] = Receives[Receives.Length - 4];
+            //    readPara.ReadValue[0] = Receives[Receives.Length - 4];
 
-                receiveByte = ByteHelper.ByteToString(Receives);
-            }
+            //    receiveByte = ByteHelper.ByteToString(Receives);
+            //}
 
             return readPara;
         }
@@ -343,12 +343,12 @@ namespace testPPI.PPI
 
         #region TReadWord
         //public bool TReadDword(Socket tcpClient, int Address, out byte[] value, int ComNum)
-        public PPIReadWritePara TReadDword(PPIReadWritePara readPara)
+        public byte [] GetTReadDword(PPIReadWritePara readPara,out PPIAddress ppiAddress)
         {
             int i = 0;
             byte fcs;
 
-            PPIAddress ppiAddress = new PPIAddress();
+             ppiAddress = new PPIAddress();
             ppiAddress.DAddress = Convert.ToByte(readPara.PlcAddress);
             byte[] TReadByte = ppiAddress.TReadByte;
 
@@ -366,8 +366,14 @@ namespace testPPI.PPI
             int tt = Convert.ToInt32(fcs) % 256;//添加的代码 mod 256
 
             TReadByte[31] = Convert.ToByte(tt);
+            return TReadByte;
+        }
 
-            TReadByte = ByteHelper.MergerArray(new byte[] { Convert.ToByte(readPara.ComNum) }, TReadByte);
+        public PPIReadWritePara TReadDword(PPIReadWritePara readPara)
+        {
+            PPIAddress ppiAddress = new PPIAddress();
+
+            byte[] TReadByte = ByteHelper.MergerArray(new byte[] { Convert.ToByte(readPara.ComNum) }, GetTReadDword(readPara, out ppiAddress));
 
           
             byte[] Receives = ReceiveReadByte(readPara.TcpClient, TReadByte, ppiAddress, readPara.ComNum);
@@ -390,6 +396,7 @@ namespace testPPI.PPI
 
         #endregion
 
+       
 
         public byte[] ReceiveReadByte(TcpClient tcpClient, byte[] Rbyte, PPIAddress ppiAddress, int ComNum)
         {

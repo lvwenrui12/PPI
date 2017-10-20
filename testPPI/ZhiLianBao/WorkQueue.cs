@@ -40,6 +40,21 @@ namespace testPPI
         }
 
         /// <summary>
+        /// 返回位于 ConcurrentQueue<T> 开始处的对象
+        /// </summary>
+        /// <returns></returns>
+        public T TryPeekBox()
+        {
+            T _obj = default(T);
+            if (!this.IsEmpty)//如果队列不为空，也就是有产品
+                this.TryPeek(out _obj);
+
+            return _obj;
+        }
+
+
+
+        /// <summary>
         /// 添加到队列末尾处
         /// </summary>
         /// <returns></returns>
